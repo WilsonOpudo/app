@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:meetme/screens/classes.dart'; // <--- Make sure this is the correct path
 
 class ProfessorPage1 extends StatefulWidget {
@@ -29,7 +28,7 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
       final allClasses = await ApiService.getClasses();
       setState(() {
         createdClasses = allClasses
-            .where((cls) => cls['professor_name'] == professorEmail)
+            .where((cls) => cls['professor_email'] == professorEmail)
             .toList();
       });
     }
@@ -101,12 +100,16 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                 final desc = descriptionController.text.trim();
                 final code = _generateClassCode();
 
-                if (name.isNotEmpty && professorEmail != null) {
+                if (name.isNotEmpty) {
                   try {
+                    final userInfo = await ApiService.getUserInfo();
+                    final username = userInfo['username'];
+                    final email = userInfo['email'];
                     await ApiService.createClass(
                       courseId: code,
                       courseName: name,
-                      professorName: professorEmail!,
+                      professorName: username!, // shown to students
+                      professorEmail: email!, // used for profile lookup
                     );
 
                     setState(() {
@@ -114,7 +117,8 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                         'course_id': code,
                         'course_name': name,
                         'description': desc,
-                        'professor_name': professorEmail!,
+                        'professor_name': username!,
+                        'professor_email': email!,
                       });
                     });
 

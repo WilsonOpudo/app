@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
+import 'package:meetme/api_service.dart';
 
 class StudentPage2 extends StatefulWidget {
   const StudentPage2({super.key});
@@ -9,180 +10,127 @@ class StudentPage2 extends StatefulWidget {
 }
 
 class _StudentPage2State extends State<StudentPage2> {
-  
+  DateTime selectedDate = DateTime.now();
+  List<Map<String, dynamic>> enrolledClasses = [];
+  List<Map<String, dynamic>> availableSlots = [];
+  String? selectedCourseId;
+  String? selectedCourseName;
+  String? studentEmail;
+  String? studentUsername;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadEnrolledClasses();
+  }
 
-  Future<void> _appointmentAdder(BuildContext context) {
-    
-    final TextEditingController codeController = TextEditingController();
+  Future<void> _loadEnrolledClasses() async {
+    final info = await ApiService.getUserInfo();
+    studentEmail = info['email'];
+    studentUsername = info['username'];
+    final classes = await ApiService.getEnrolledClasses(studentEmail!);
+    setState(() => enrolledClasses = classes);
+  }
 
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          title: Text(
-            'Book an Appointment',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).shadowColor,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-              'Please select the available time slot',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                color: Theme.of(context).shadowColor,
-              ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 2.0,
-                children: List.generate(15, (index) {
-                  final startTime = TimeOfDay(hour: 10 + (index ~/ 2), minute: (index % 2) * 30);
-                  final endTime = TimeOfDay(hour: startTime.hour, minute: startTime.minute + 29);
-                  return ElevatedButton(
-                    onPressed: () {
-                      // Handle time slot selection logic here
-                      // Adding appointment here into database
-                      // print('Selected time slot: ${startTime.format(context)} - ${endTime.format(context)}');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).hintColor,
-                      foregroundColor: Theme.of(context).scaffoldBackgroundColor,
-                      shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      '${startTime.format(context).replaceFirst(' AM', '').replaceFirst(' PM', '')}-${endTime.format(context).replaceFirst(' AM', 'am').replaceFirst(' PM', 'pm')}',
-                      style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      ),
-                    ),
-                  );
-                }
-                ),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Theme.of(context).secondaryHeaderColor,
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text(
-                'Register',
-                style: TextStyle(
-                  color: Theme.of(context).shadowColor,
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                ),
-              ),
-              onPressed: () {
-                final classCode = codeController.text;
-                if (classCode.isNotEmpty) {
-                  // Handle class registration logic here
-                  // Where it should search the class in DB and add it to classes' list
-                  // print('Class registered with code: $classCode');
-                }
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+  Future<void> _loadAvailableSlots(String courseId) async {
+    final response = await ApiService.getAvailableSlots(
+      professorEmail: await ApiService.getProfessorEmailFromCourse(courseId),
+      courseId: courseId,
+      date: selectedDate.toIso8601String().split('T').first,
+    );
+    setState(() => availableSlots = response);
+  }
+
+  Future<void> _bookSlot(String courseId, String courseName,
+      String professorEmail, String professorName, String time) async {
+    final dateTime = DateTime.parse(
+        "${selectedDate.toIso8601String().split('T').first}T$time:00");
+    await ApiService.createAppointment(
+      studentName: studentUsername!,
+      studentEmail: studentEmail!,
+      courseId: courseId,
+      courseName: courseName,
+      professorName: professorName,
+      dateTime: dateTime,
+    );
+    await _loadAvailableSlots(courseId);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Appointment booked for $time")),
     );
   }
-  
-  
+
+  Future<void> _showSlotPicker(String courseId, String courseName) async {
+    final professorEmail =
+        await ApiService.getProfessorEmailFromCourse(courseId);
+    final profDetails = await ApiService.getProfessorDetails(professorEmail);
+    final professorName = profDetails['fullName'];
+
+    await _loadAvailableSlots(courseId);
+
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: availableSlots.isEmpty
+            ? const Text("No available slots for selected date")
+            : Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: availableSlots.map((slot) {
+                  final time = slot['time'];
+                  return ElevatedButton(
+                    onPressed: () => _bookSlot(courseId, courseName,
+                        professorEmail, professorName, time),
+                    child: Text(time),
+                  );
+                }).toList(),
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            const SizedBox(height: 10.0),
-            SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              child: DatePicker(
-                DateTime.now(),
-                //controller: _datePickerController,
-                height: 120,
-                width: 60,
-                initialSelectedDate:  DateTime.now(),
-                selectionColor: Theme.of(context).primaryColor,
-                selectedTextColor: Theme.of(context).scaffoldBackgroundColor,
-                locale: 'en_US',
-                daysCount: 14,
-                onDateChange: (date) {
-                  setState(() {
-                  });
-                },
-              ),
-            ),
-            ),
-            const Text('Scheduling Appointment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400)),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(12),
-                itemCount: 7,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(
-                        'CS-133${index + 1}-Computer Science ${index + 1}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).shadowColor,
-                        ),
-                      ),
-                        subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                        Text(
-                          'Rob LeGrand',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
-                            color: Theme.of(context).hintColor,
-                          ),
-                        ),
-                        ],
-                        ),
-                      onTap: () => _appointmentAdder(context),
+      body: Column(
+        children: [
+          const SizedBox(height: 12),
+          DatePicker(
+            DateTime.now(),
+            height: 100,
+            initialSelectedDate: selectedDate,
+            selectionColor: Theme.of(context).primaryColor,
+            selectedTextColor: Colors.white,
+            onDateChange: (date) => setState(() => selectedDate = date),
+          ),
+          const SizedBox(height: 8),
+          const Text('Your Enrolled Classes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: enrolledClasses.length,
+              itemBuilder: (context, index) {
+                final cls = enrolledClasses[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(cls['course_name']),
+                    subtitle: Text("Professor: ${cls['professor_name']}"),
+                    trailing: ElevatedButton(
+                      onPressed: () =>
+                          _showSlotPicker(cls['course_id'], cls['course_name']),
+                      child: const Text("Book"),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 28),
-          ],
-        ),
+          )
+        ],
       ),
     );
   }

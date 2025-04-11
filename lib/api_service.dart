@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
+  //static const String baseUrl = 'http://10.0.2.2:8000'; // andriod emulator
+  //static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
 
   // You can still save email/role if needed
   static Future<void> saveUserInfo(String email, String role,
@@ -77,6 +79,7 @@ class ApiService {
     required String courseId,
     required String courseName,
     required String professorName,
+    required String professorEmail, // ✅ Add this
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/classes'),
@@ -85,6 +88,7 @@ class ApiService {
         'course_id': courseId,
         'course_name': courseName,
         'professor_name': professorName,
+        'professor_email': professorEmail, // ✅ Include in body
       }),
     );
 
@@ -260,6 +264,112 @@ class ApiService {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to fetch professor details: ${response.body}');
+    }
+  }
+
+  static Future<String> getProfessorEmailFromCourse(String courseId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/professor-email/from-course/$courseId'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['email'];
+    } else {
+      throw Exception('Failed to fetch professor email');
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserByUsername(String username) async {
+    final encodedUsername = Uri.encodeComponent(username);
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/username/$encodedUsername'),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('User not found: ${response.body}');
+    }
+  }
+
+  // ✅ Create Available Slot (Professor)
+  static Future<void> addAvailableSlot({
+    required String professorEmail,
+    required String courseId,
+    required String date, // YYYY-MM-DD
+    required String time, // HH:MM (24-hour)
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/slots'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'professor_email': professorEmail,
+        'course_id': courseId,
+        'date': date,
+        'time': time,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to add slot: ${response.body}');
+    }
+  }
+
+// ✅ Get Slots for a Course
+  static Future<List<Map<String, dynamic>>> getAvailableSlots({
+    required String professorEmail,
+    required String courseId,
+    required String date,
+  }) async {
+    final encodedEmail = Uri.encodeComponent(professorEmail);
+    final response = await http.get(Uri.parse(
+      '$baseUrl/available-slots?professor_email=$encodedEmail&course_id=$courseId&date=$date',
+    ));
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch available slots: ${response.body}');
+    }
+  }
+
+  static Future<void> saveAvailableSlot({
+    required String professorEmail,
+    required String courseId,
+    required String date,
+    required String time,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/available-slots'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'professor_email': professorEmail,
+        'course_id': courseId,
+        'date': date,
+        'time': time,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to save available slot: ${response.body}');
+    }
+  }
+
+  // Delete an available slot
+  static Future<void> deleteAvailableSlot({
+    required String professorEmail,
+    required String courseId,
+    required String date,
+    required String time,
+  }) async {
+    final uri = Uri.parse(
+        '$baseUrl/available-slots?professor_email=$professorEmail&course_id=$courseId&date=$date&time=$time');
+
+    final response = await http.delete(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete slot: ${response.body}');
     }
   }
 }

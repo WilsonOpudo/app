@@ -206,7 +206,8 @@ class _ProfDetailsPageState extends State<ProfDetailsPage>
                   child: ElevatedButton(
                     onPressed: isSubmitting ? null : _submitDetails,
                     child: isSubmitting
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const CircularProgressIndicator(
+                            color: Color.fromARGB(255, 126, 31, 31))
                         : const Text("Save"),
                   ),
                 ),

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
+import 'professor_classdetails.dart';
 
 class StudentPage1 extends StatefulWidget {
   const StudentPage1({super.key});
 
   @override
   State<StudentPage1> createState() => _StudentPage1State();
+}
+
+class AppNavigation {
+  static void Function(int pageIndex)? jumpToPage;
 }
 
 class _StudentPage1State extends State<StudentPage1> {
@@ -21,12 +26,11 @@ class _StudentPage1State extends State<StudentPage1> {
   Future<void> _loadEnrolledClasses() async {
     final userInfo = await ApiService.getUserInfo();
     studentEmail = userInfo['email'];
+
     if (studentEmail != null) {
       try {
         final classes = await ApiService.getEnrolledClasses(studentEmail!);
-        setState(() {
-          joinedClasses = classes;
-        });
+        setState(() => joinedClasses = classes);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load classes: $e')),
@@ -36,124 +40,90 @@ class _StudentPage1State extends State<StudentPage1> {
   }
 
   Future<void> _classAdder(BuildContext context) {
-    final TextEditingController codeController = TextEditingController();
+    final codeController = TextEditingController();
 
     return showDialog<void>(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          title: Text(
-            'Class Registration',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).shadowColor,
-            ),
-          ),
+          title: Text('Class Registration',
+              style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).shadowColor)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Please enter the code provided by your teacher',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  color: Theme.of(context).shadowColor,
-                ),
-              ),
+              Text('Please enter the code provided by your teacher',
+                  style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Theme.of(context).shadowColor)),
               const SizedBox(height: 20),
               TextField(
                 controller: codeController,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                   hintText: 'Class Code Ex: ABCD',
                   hintStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    color: Theme.of(context).hintColor,
-                    fontStyle: FontStyle.italic,
-                  ),
+                      fontStyle: FontStyle.italic,
+                      fontFamily: 'Poppins',
+                      color: Theme.of(context).hintColor),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14)),
                   filled: true,
                   fillColor: Theme.of(context).scaffoldBackgroundColor,
                 ),
               ),
             ],
           ),
-          actions: <Widget>[
+          actions: [
             TextButton(
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Theme.of(context).secondaryHeaderColor,
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                ),
-              ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel',
+                  style:
+                      TextStyle(color: Theme.of(context).secondaryHeaderColor)),
             ),
             TextButton(
-              child: Text(
-                'Register',
-                style: TextStyle(
-                  color: Theme.of(context).shadowColor,
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                ),
-              ),
               onPressed: () async {
                 final classCode = codeController.text.trim();
                 if (classCode.isNotEmpty && studentEmail != null) {
                   try {
                     final info = await ApiService.getUserInfo();
-                    final studentEmail = info['email'];
-                    final studentUsername = info['username'];
+                    final email = info['email'];
+                    final username = info['username'];
 
                     final classData = await ApiService.getClassById(classCode);
-
                     final alreadyJoined = joinedClasses.any(
-                      (cls) => cls['course_id'] == classData['course_id'],
-                    );
+                        (cls) => cls['course_id'] == classData['course_id']);
 
                     if (!alreadyJoined) {
                       await ApiService.enrollInClass(
                         courseId: classCode,
-                        studentEmail: studentEmail!,
-                        studentUsername: studentUsername!,
+                        studentEmail: email!,
+                        studentUsername: username!,
                       );
 
-                      setState(() {
-                        joinedClasses.add(classData);
-                      });
+                      setState(() => joinedClasses.add(classData));
+                      Navigator.pop(context);
 
-                      Navigator.of(context).pop();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Class joined successfully!')),
-                      );
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Class joined successfully!')));
                     } else {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('You already joined this class.')),
-                      );
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('You already joined this class.')));
                     }
                   } catch (e) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(
-                              'Invalid class code or error joining class.')),
-                    );
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Invalid class code or join error.')));
                   }
                 }
               },
+              child: Text('Register',
+                  style: TextStyle(color: Theme.of(context).shadowColor)),
             ),
           ],
         );
@@ -164,122 +134,120 @@ class _StudentPage1State extends State<StudentPage1> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Theme.of(context).scaffoldBackgroundColor,
-                  Theme.of(context).scaffoldBackgroundColor,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Classes',
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).shadowColor)),
+                  IconButton(
+                    icon: Icon(Icons.add_rounded,
+                        size: 25, color: Theme.of(context).shadowColor),
+                    onPressed: () => _classAdder(context),
+                  ),
                 ],
               ),
             ),
-            child: Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Classes',
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search Classes',
+                  hintStyle: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                      color: Theme.of(context).hintColor),
+                  prefixIcon:
+                      Icon(Icons.search, color: Theme.of(context).shadowColor),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                ),
+                onChanged: (value) {
+                  // Optional search filter
+                },
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: joinedClasses.length,
+                itemBuilder: (context, index) {
+                  final cls = joinedClasses[index];
+
+                  return Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Theme.of(context).shadowColor,
+                        backgroundImage:
+                            AssetImage('assets/logo-transparent-png.png'),
+                      ),
+                      title: Text(
+                        cls['course_name'],
                         style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).shadowColor,
-                        ),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).shadowColor),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.add_rounded,
-                            color: Theme.of(context).shadowColor, size: 25),
-                        onPressed: () => _classAdder(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.all(15),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search Classes',
-                      hintStyle: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).hintColor,
-                        fontFamily: 'Poppins',
-                      ),
-                      prefixIcon: Icon(Icons.search,
-                          color: Theme.of(context).shadowColor),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                    onChanged: (value) {
-                      // Optional: Local filter
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(12),
-                    itemCount: joinedClasses.length,
-                    itemBuilder: (context, index) {
-                      final cls = joinedClasses[index];
-                      return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).shadowColor,
-                            radius: 24,
-                            backgroundImage:
-                                AssetImage('assets/logo-transparent-png.png'),
-                          ),
-                          title: Text(
-                            cls['course_name'],
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).shadowColor,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                cls['professor_name'],
-                                style: TextStyle(
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(cls['professor_name'],
+                              style: TextStyle(
                                   fontSize: 16,
                                   fontStyle: FontStyle.italic,
-                                  color: Theme.of(context).hintColor,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Class Code: ${cls['course_id']}',
-                                style: TextStyle(
+                                  color: Theme.of(context).hintColor)),
+                          const SizedBox(height: 4),
+                          Text('Class Code: ${cls['course_id']}',
+                              style: TextStyle(
                                   fontSize: 10,
-                                  color: Theme.of(context).hintColor,
-                                ),
-                              ),
-                            ],
+                                  color: Theme.of(context).hintColor)),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfessorClassDetailsPage(
+                              courseId: cls['course_id'],
+                              onNavigateToAppointments: () {
+                                Navigator.pop(context);
+                                Future.delayed(Duration.zero, () {
+                                  AppNavigation.jumpToPage?.call(1);
+                                });
+                              },
+                            ),
                           ),
-                          onTap: () {
-                            // Optional: navigate to class details
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 28),
-              ],
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 28),
+          ],
+        ),
       ),
     );
   }
