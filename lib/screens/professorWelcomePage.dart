@@ -13,12 +13,20 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   String? professorEmail;
 
   final Map<String, String> courseImages = {
-    'Math': 'assets/math.jpg',
+    'Mathematics': 'assets/math.jpg',
     'Science': 'assets/science.jpg',
     'English': 'assets/english.jpg',
     'History': 'assets/history.jpg',
     'Art': 'assets/art.jpg',
     'Other': 'assets/other.jpg',
+  };
+
+  final Map<String, List<String>> categoryKeywords = {
+    'Mathematics': ['math', 'algebra', 'calculus', 'geometry', 'trigonometry'],
+    'Science': ['science', 'biology', 'physics', 'chemistry', 'computer'],
+    'English': ['english', 'literature', 'grammar', 'writing', 'language'],
+    'History': ['history', 'geography', 'civics'],
+    'Art': ['art', 'drawing', 'painting', 'music', 'theatre'],
   };
 
   @override
@@ -41,13 +49,32 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     }
   }
 
-  List<Map<String, dynamic>> _getClassesByName(String name) {
-    return createdClasses.where((cls) => cls['course_name'] == name).toList();
+  String _categorize(String name) {
+    final lower = name.toLowerCase();
+    for (final entry in categoryKeywords.entries) {
+      for (final keyword in entry.value) {
+        if (lower.contains(keyword)) return entry.key;
+      }
+    }
+    return 'Other';
+  }
+
+  Map<String, List<Map<String, dynamic>>> _groupByCategory() {
+    final grouped = {
+      for (final cat in courseImages.keys) cat: <Map<String, dynamic>>[]
+    };
+
+    for (final cls in createdClasses) {
+      final category = _categorize(cls['course_name']);
+      grouped[category]?.add(cls);
+    }
+
+    return grouped;
   }
 
   @override
   Widget build(BuildContext context) {
-    final courseNames = courseImages.keys.toList();
+    final grouped = _groupByCategory();
 
     return Scaffold(
       appBar: AppBar(
@@ -72,22 +99,20 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                   crossAxisSpacing: 16,
                   childAspectRatio: 1.1,
                 ),
-                itemCount: courseNames.length,
+                itemCount: courseImages.length,
                 itemBuilder: (context, index) {
-                  final course = courseNames[index];
-                  final classes = _getClassesByName(course);
-                  final imgPath =
-                      courseImages[course] ?? courseImages['Other']!;
+                  final category = courseImages.keys.elementAt(index);
+                  final classes = grouped[category] ?? [];
+                  final imgPath = courseImages[category]!;
 
                   return GestureDetector(
                     onTap: () {
                       if (classes.isNotEmpty) {
-                        // Navigate to class list page with matching course name
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => CourseGroupPage(
-                              courseName: course,
+                              courseName: category,
                               matchingClasses: classes,
                             ),
                           ),
@@ -104,7 +129,7 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                               fit: BoxFit.cover,
                               colorFilter: classes.isEmpty
                                   ? ColorFilter.mode(
-                                      Colors.grey.withOpacity(0.4),
+                                      Colors.black.withOpacity(0.3),
                                       BlendMode.darken,
                                     )
                                   : null,
@@ -119,7 +144,7 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                course,
+                                category,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -131,10 +156,9 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                                   "${classes.length} class${classes.length > 1 ? 'es' : ''}",
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              if (classes.isEmpty)
+                                )
+                              else
                                 const Text(
                                   "No class yet",
                                   style: TextStyle(
@@ -162,8 +186,11 @@ class CourseGroupPage extends StatelessWidget {
   final String courseName;
   final List<Map<String, dynamic>> matchingClasses;
 
-  const CourseGroupPage(
-      {super.key, required this.courseName, required this.matchingClasses});
+  const CourseGroupPage({
+    super.key,
+    required this.courseName,
+    required this.matchingClasses,
+  });
 
   @override
   Widget build(BuildContext context) {
