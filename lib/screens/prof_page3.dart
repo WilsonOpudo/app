@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:meetme/api_service.dart'; // make sure this provides appointment data
 
 class ProfessorPage3 extends StatefulWidget {
   const ProfessorPage3({super.key});
@@ -10,10 +11,56 @@ class ProfessorPage3 extends StatefulWidget {
 }
 
 class _ProfessorPage3State extends State<ProfessorPage3> {
-
   DateTime _selectedDate = DateTime.now();
   final DatePickerController _datePickerController = DatePickerController();
   final CalendarController _calendarController = CalendarController();
+  List<Appointment> calendarAppointments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAppointmentsForDate(_selectedDate);
+  }
+
+  Future<void> _fetchAppointmentsForDate(DateTime date) async {
+    final userInfo = await ApiService.getUserInfo();
+    final email = userInfo['email'];
+    final allClasses = await ApiService.getClasses();
+
+    final classIds = allClasses
+        .where((cls) => cls['professor_email'] == email)
+        .map((cls) => cls['course_id'])
+        .toList();
+
+    List<Map<String, dynamic>> allAppts = [];
+
+    for (String courseId in classIds) {
+      final appts = await ApiService.getProfessorAppointments(courseId);
+      allAppts.addAll(appts);
+    }
+
+    final filtered = allAppts.where((appt) {
+      final apptDate = DateTime.tryParse(appt['appointment_date']);
+      return apptDate != null &&
+          apptDate.year == date.year &&
+          apptDate.month == date.month &&
+          apptDate.day == date.day;
+    }).toList();
+
+    final appointments = filtered.map((appt) {
+      final start = DateTime.parse(appt['appointment_date']);
+      return Appointment(
+        startTime: start,
+        endTime: start.add(const Duration(minutes: 30)),
+        subject: "${appt['student_name']} - ${appt['course_name']}",
+        color: generateRedTint(appt['course_name']),
+      );
+    }).toList();
+
+    setState(() {
+      calendarAppointments = appointments;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +70,14 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
         child: Column(
           children: [
             const SizedBox(height: 10.0),
-            SingleChildScrollView(
-            child: Container(
+            Container(
               padding: const EdgeInsets.all(12.0),
               child: DatePicker(
                 DateTime.now(),
                 controller: _datePickerController,
                 height: 120,
                 width: 60,
-                initialSelectedDate:  _selectedDate,
+                initialSelectedDate: _selectedDate,
                 selectionColor: Theme.of(context).primaryColor,
                 selectedTextColor: Theme.of(context).scaffoldBackgroundColor,
                 locale: 'en_US',
@@ -40,81 +86,70 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                   setState(() {
                     _selectedDate = date;
                     _calendarController.displayDate = _selectedDate;
+                    _fetchAppointmentsForDate(date);
                   });
                 },
               ),
             ),
-            ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 540,
-                      child: SfCalendar(
-                        controller: _calendarController,
-                        viewHeaderStyle: ViewHeaderStyle(
-                          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                          dateTextStyle: TextStyle(
-                            fontSize: 16,
+                child: SfCalendar(
+                  controller: _calendarController,
+                  viewHeaderStyle: ViewHeaderStyle(
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    dateTextStyle: TextStyle(
+                      fontSize: 16,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).shadowColor,
+                    ),
+                  ),
+                  headerHeight: 0,
+                  todayHighlightColor: Theme.of(context).secondaryHeaderColor,
+                  view: CalendarView.day,
+                  initialDisplayDate: _selectedDate,
+                  initialSelectedDate: _selectedDate,
+                  dataSource: MeetingDataSource(calendarAppointments),
+                  onViewChanged: (details) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final newDate = details.visibleDates.first;
+                      _datePickerController.animateToDate(newDate);
+                      _fetchAppointmentsForDate(newDate);
+                    });
+                  },
+                  appointmentBuilder: (context, details) {
+                    final appointment = details.appointments.first;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: appointment.color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          appointment.subject,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).shadowColor,
-                          ),
-                        ),
-                        headerHeight: 0,
-                        todayHighlightColor: Theme.of(context).secondaryHeaderColor,
-                        view: CalendarView.day,
-                        initialDisplayDate: _selectedDate,
-                        initialSelectedDate: _selectedDate,
-                        dataSource: MeetingDataSource(getAppointments(_selectedDate)),
-                        onViewChanged: (ViewChangedDetails details) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            setState(() {
-                              _selectedDate = details.visibleDates[0];
-                              _datePickerController.animateToDate(_selectedDate);
-                            });
-                          });
-                        },
-                        appointmentBuilder: (context, details) {
-                        final Appointment appointment = details.appointments.first;
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).hintColor,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                appointment.subject,
-                                style: TextStyle(
-                                  color: Theme.of(context).shadowColor,
-                                  fontSize: 16,
-                                  fontFamily: 'Poppins',
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        timeSlotViewSettings: TimeSlotViewSettings(
-                          startHour: 8,
-                          endHour: 20,
-                          timeInterval: Duration(minutes: 60),
-                          timeFormat: 'h:mm a',
-                          timeIntervalHeight: 80,
-                          allDayPanelColor: Theme.of(context).scaffoldBackgroundColor,
-                          timeTextStyle: TextStyle(
-                            fontSize: 10,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).shadowColor,
                           ),
                         ),
                       ),
+                    );
+                  },
+                  timeSlotViewSettings: TimeSlotViewSettings(
+                    startHour: 8,
+                    endHour: 20,
+                    timeInterval: const Duration(minutes: 30),
+                    timeFormat: 'h:mm a',
+                    timeIntervalHeight: 70,
+                    timeTextStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).shadowColor,
                     ),
-                    const SizedBox(height: 10.0),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -125,23 +160,13 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
   }
 }
 
-
-// Dummy data for appointments
-// You can replace this with your own data source
-// or fetch data from an API
-List<Appointment> getAppointments(DateTime selectedDate) {
-  List<Appointment> meetings = <Appointment>[];
-  final DateTime today = DateTime.now();
-  final DateTime startTime = DateTime(today.year, today.month, today.day, 17, 0, 0);
-  final DateTime endTime = startTime.add(const Duration(hours: 1));
-  meetings.add(Appointment(
-    startTime: startTime,
-    endTime: endTime,
-    subject: 'Meeting',
-    color: const Color.fromARGB(90, 255, 0, 13),
-    recurrenceRule: 'FREQ=DAILY;INTERVAL=2;COUNT=3',
-  ));
-  return meetings;
+// 🔴 Generate unique red-tinted colors based on course name
+Color generateRedTint(String key) {
+  final hash = key.hashCode;
+  final red = 200 + (hash % 55); // Strong red
+  final green = 30 + (hash % 30); // Low green
+  final blue = 30 + (hash % 30); // Low blue
+  return Color.fromARGB(255, red, green, blue);
 }
 
 class MeetingDataSource extends CalendarDataSource {

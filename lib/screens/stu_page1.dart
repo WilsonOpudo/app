@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
 import 'professor_classdetails.dart';
+import 'studentappointmentlist.dart';
 
 class StudentPage1 extends StatefulWidget {
   const StudentPage1({super.key});
@@ -152,15 +153,44 @@ class _StudentPage1State extends State<StudentPage1> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Classes',
-                      style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).shadowColor)),
-                  IconButton(
-                    icon: Icon(Icons.add_rounded,
-                        size: 25, color: Theme.of(context).shadowColor),
-                    onPressed: () => _classAdder(context),
+                  Text(
+                    'Classes',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).shadowColor,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const MyAppointmentsPage()),
+                          );
+                        },
+                        icon: const Icon(Icons.calendar_today, size: 16),
+                        label: const Text("My Appointments"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(Icons.add_rounded,
+                            size: 25, color: Theme.of(context).shadowColor),
+                        onPressed: () => _classAdder(context),
+                      ),
+                    ],
                   ),
                 ],
               ),

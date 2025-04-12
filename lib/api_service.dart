@@ -161,11 +161,11 @@ class ApiService {
       Uri.parse('$baseUrl/appointments'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'studentName': studentName,
-        'studentEmail': studentEmail,
-        'courseId': courseId,
-        'courseName': courseName,
-        'professorName': professorName,
+        'student_name': studentName,
+        'student_email': studentEmail,
+        'course_id': courseId,
+        'course_name': courseName,
+        'professor_name': professorName,
         'appointment_date': dateTime.toIso8601String(),
       }),
     );
@@ -175,13 +175,18 @@ class ApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getAppointments() async {
-    final response = await http.get(Uri.parse('$baseUrl/appointments'));
+  static Future<List<Map<String, dynamic>>> getAppointments(
+      String email) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/appointments/student/$email'),
+      headers: {'Content-Type': 'application/json'},
+    );
 
     if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      final List data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
     } else {
-      throw Exception('Failed to fetch appointments: ${response.body}');
+      throw Exception('Failed to load appointments: ${response.body}');
     }
   }
 
@@ -370,6 +375,53 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete slot: ${response.body}');
+    }
+  }
+
+  static Future<void> cancelAppointment(String appointmentId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/appointments/$appointmentId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to cancel appointment: ${response.body}");
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getProfessorAppointments(
+      String courseId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/appointments/professor/$courseId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception('Failed to fetch appointments: ${response.body}');
+    }
+  }
+
+  static Future<void> rescheduleAppointment({
+    required String appointmentId,
+    required DateTime newDateTime,
+    required String courseId,
+    required String studentEmail,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/appointments/$appointmentId/reschedule'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'new_datetime': newDateTime.toIso8601String(),
+        'course_id': courseId,
+        'student_email': studentEmail,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to reschedule appointment: ${response.body}");
     }
   }
 }

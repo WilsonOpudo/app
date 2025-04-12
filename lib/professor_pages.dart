@@ -5,6 +5,7 @@ import 'screens/prof_page1.dart';
 import 'screens/prof_page2.dart';
 import 'screens/prof_page3.dart';
 import 'screens/prof_page4.dart';
+import 'screens/professorWelcomePage.dart';
 import 'main.dart';
 import 'screens/profdetails.dart';
 
@@ -107,6 +108,7 @@ class _HomePageState extends State<ProfessorHomePage> {
                     });
                   },
                   children: [
+                    ProfessorWelcomePage(),
                     ProfessorPage1(),
                     ProfessorPage2(),
                     ProfessorPage3(),
@@ -151,7 +153,13 @@ class _HomePageState extends State<ProfessorHomePage> {
           tabs: [
             GButton(
               icon: Icons.home_filled,
-              text: 'Home',
+              text: 'Welcome', // 🟢 Updated label
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+            ),
+            GButton(
+              icon: Icons.class_,
+              text: 'Classes',
               iconActiveColor: Theme.of(context).shadowColor,
               iconColor: Theme.of(context).hintColor,
             ),
