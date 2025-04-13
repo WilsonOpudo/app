@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:meetme/api_service.dart';
+import 'package:meetme/app_navigation.dart'; // ✅ for jumpToPage
+import 'professorappointments.dart';
+import 'CourseGroupPage.dart';
 
 class ProfessorWelcomePage extends StatefulWidget {
   const ProfessorWelcomePage({super.key});
@@ -10,7 +14,9 @@ class ProfessorWelcomePage extends StatefulWidget {
 
 class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   List<Map<String, dynamic>> createdClasses = [];
+  List<Map<String, dynamic>> todayAppointments = [];
   String? professorEmail;
+  String? username;
 
   final Map<String, String> courseImages = {
     'Mathematics': 'assets/math.jpg',
@@ -22,30 +28,47 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   };
 
   final Map<String, List<String>> categoryKeywords = {
-    'Mathematics': ['math', 'algebra', 'calculus', 'geometry', 'trigonometry'],
+    'Mathematics': ['math', 'algebra', 'calculus', 'geometry'],
     'Science': ['science', 'biology', 'physics', 'chemistry', 'computer'],
-    'English': ['english', 'literature', 'grammar', 'writing', 'language'],
+    'English': ['english', 'literature', 'grammar'],
     'History': ['history', 'geography', 'civics'],
-    'Art': ['art', 'drawing', 'painting', 'music', 'theatre'],
+    'Art': ['art', 'drawing', 'painting', 'music'],
   };
 
   @override
   void initState() {
     super.initState();
-    _loadProfessorClasses();
+    _loadData();
   }
 
-  Future<void> _loadProfessorClasses() async {
+  Future<void> _loadData() async {
     final info = await ApiService.getUserInfo();
     professorEmail = info['email'];
+    username = info['username'];
 
     if (professorEmail != null) {
       final allClasses = await ApiService.getClasses();
-      setState(() {
-        createdClasses = allClasses
-            .where((cls) => cls['professor_email'] == professorEmail)
-            .toList();
-      });
+      final filtered = allClasses
+          .where((cls) => cls['professor_email'] == professorEmail)
+          .toList();
+
+      List<Map<String, dynamic>> appointments = [];
+      for (final cls in filtered) {
+        final appts =
+            await ApiService.getProfessorAppointments(cls['course_id']);
+        appointments.addAll(appts);
+      }
+
+      final today = DateTime.now();
+      todayAppointments = appointments.where((appt) {
+        final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
+        return apptDate != null &&
+            apptDate.year == today.year &&
+            apptDate.month == today.month &&
+            apptDate.day == today.day;
+      }).toList();
+
+      setState(() => createdClasses = filtered);
     }
   }
 
@@ -63,148 +86,186 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     final grouped = {
       for (final cat in courseImages.keys) cat: <Map<String, dynamic>>[]
     };
-
     for (final cls in createdClasses) {
       final category = _categorize(cls['course_name']);
       grouped[category]?.add(cls);
     }
-
     return grouped;
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
   Widget build(BuildContext context) {
     final grouped = _groupByCategory();
+    final greeting = _getGreeting();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Welcome, Professor!'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Your Course Dashboard",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            Text("$greeting, ${username ?? 'Professor'}!",
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1.1,
-                ),
-                itemCount: courseImages.length,
-                itemBuilder: (context, index) {
-                  final category = courseImages.keys.elementAt(index);
-                  final classes = grouped[category] ?? [];
-                  final imgPath = courseImages[category]!;
 
-                  return GestureDetector(
-                    onTap: () {
-                      if (classes.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CourseGroupPage(
-                              courseName: category,
-                              matchingClasses: classes,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            image: DecorationImage(
-                              image: AssetImage(imgPath),
-                              fit: BoxFit.cover,
-                              colorFilter: classes.isEmpty
-                                  ? ColorFilter.mode(
-                                      Colors.black.withOpacity(0.3),
-                                      BlendMode.darken,
-                                    )
-                                  : null,
-                            ),
+            // 🔹 Quick Action Buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _quickAction(
+                  icon: Icons.add_box,
+                  label: 'Create Class',
+                  onTap: () => AppNavigation.jumpToPage?.call(1),
+                ),
+                _quickAction(
+                  icon: Icons.schedule,
+                  label: 'Manage Slots',
+                  onTap: () => AppNavigation.jumpToPage?.call(2),
+                ),
+                _quickAction(
+                  icon: Icons.calendar_month,
+                  label: 'Calendar',
+                  onTap: () => AppNavigation.jumpToPage?.call(3),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 🔹 Today’s Appointments
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Today's Appointments",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                TextButton.icon(
+                  icon: const Icon(Icons.view_list, size: 16),
+                  label: const Text("View All"),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ProfessorAppointmentsPage()),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (todayAppointments.isEmpty)
+              const Text("No upcoming appointments for today.",
+                  style: TextStyle(color: Colors.grey))
+            else
+              ...todayAppointments.map((appt) {
+                final time = DateFormat.jm()
+                    .format(DateTime.parse(appt['appointment_date']));
+                return ListTile(
+                  leading: const Icon(Icons.access_time,
+                      color: Colors.teal, size: 20),
+                  title:
+                      Text("${appt['student_name']} - ${appt['course_name']}"),
+                  subtitle: Text(time),
+                );
+              }),
+
+            const SizedBox(height: 24),
+
+            const Text("Your Course Categories",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
+              children: grouped.entries.map((entry) {
+                final category = entry.key;
+                final classes = entry.value;
+                final imgPath = courseImages[category]!;
+
+                return GestureDetector(
+                  onTap: () {
+                    if (classes.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CourseGroupPage(
+                            courseName: category,
+                            matchingClasses: classes,
                           ),
                         ),
-                        Positioned(
-                          bottom: 12,
-                          left: 12,
-                          right: 12,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                category,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              if (classes.isNotEmpty)
-                                Text(
-                                  "${classes.length} class${classes.length > 1 ? 'es' : ''}",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                  ),
-                                )
-                              else
-                                const Text(
-                                  "No class yet",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                )
-                            ],
-                          ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(imgPath),
+                        fit: BoxFit.cover,
+                        colorFilter: classes.isEmpty
+                            ? ColorFilter.mode(
+                                Colors.black.withOpacity(0.4), BlendMode.darken)
+                            : null,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    alignment: Alignment.bottomLeft,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(category,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                        Text(
+                          classes.isEmpty
+                              ? "No class yet"
+                              : "${classes.length} class${classes.length > 1 ? 'es' : ''}",
+                          style: const TextStyle(color: Colors.white70),
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class CourseGroupPage extends StatelessWidget {
-  final String courseName;
-  final List<Map<String, dynamic>> matchingClasses;
-
-  const CourseGroupPage({
-    super.key,
-    required this.courseName,
-    required this.matchingClasses,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("$courseName Classes")),
-      body: ListView.builder(
-        itemCount: matchingClasses.length,
-        itemBuilder: (context, index) {
-          final cls = matchingClasses[index];
-          return ListTile(
-            title: Text(cls['course_name']),
-            subtitle: Text("Code: ${cls['course_id']}"),
-          );
-        },
+  Widget _quickAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.brown.shade100,
+            radius: 24,
+            child: Icon(icon, color: Colors.brown.shade800),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }

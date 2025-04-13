@@ -51,7 +51,7 @@ class AuthController {
         if (role == "student") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
+            MaterialPageRoute(builder: (context) => const StudentHomePage()),
           );
         } else if (role == "professor") {
           Navigator.pushReplacement(

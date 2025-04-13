@@ -1,39 +1,44 @@
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:meetme/student_navigation.dart';
+
+import 'main.dart';
+import 'screens/studentwelcomepage.dart';
 import 'screens/stu_page1.dart';
 import 'screens/stu_page2.dart';
 import 'screens/stu_page3.dart';
 import 'screens/stu_page4.dart';
-import 'main.dart';
 
-class AppNavigation {
-  static void Function(int pageIndex)? jumpToPage;
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class StudentHomePage extends StatefulWidget {
+  const StudentHomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<StudentHomePage> createState() => _StudentHomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _StudentHomePageState extends State<StudentHomePage> {
   final PageController _controller = PageController();
   int _bottomNavIndex = 0;
 
-  // Global access for navigation
-  static late void Function(int) jumpToPage;
   @override
   void initState() {
     super.initState();
-    AppNavigation.jumpToPage = (index) {
+    StudentNavigation.jumpToPage = (index) {
       _controller.animateToPage(
         index,
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOut,
       );
+      setState(() => _bottomNavIndex = index);
     };
+  }
+
+  @override
+  void dispose() {
+    StudentNavigation.jumpToPage = null;
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -43,10 +48,9 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
-          icon:
-              Icon(Icons.person_rounded, color: Theme.of(context).shadowColor),
+          icon: Icon(Icons.person, color: Theme.of(context).shadowColor),
           onPressed: () {
-            // Handle user profile action
+            // Optional: Navigate to student profile
           },
         ),
         title: Text(
@@ -65,8 +69,8 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoadingScreen()),
-                (Route<dynamic> route) => false,
+                MaterialPageRoute(builder: (_) => const LoadingScreen()),
+                (route) => false,
               );
             },
           ),
@@ -77,22 +81,21 @@ class _HomePageState extends State<HomePage> {
           PageView(
             controller: _controller,
             onPageChanged: (index) {
-              setState(() {
-                _bottomNavIndex = index;
-              });
+              setState(() => _bottomNavIndex = index);
             },
             children: const [
+              StudentWelcomePage(),
               StudentPage1(),
               StudentPage2(),
               StudentPage3(),
               StudentPage4(),
             ],
           ),
-          Container(
+          Align(
             alignment: const Alignment(0, 0.97),
             child: SmoothPageIndicator(
               controller: _controller,
-              count: 4,
+              count: 5,
               effect: WormEffect(
                 dotHeight: 10,
                 dotWidth: 10,
@@ -111,48 +114,17 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(16),
           selectedIndex: _bottomNavIndex,
           onTabChange: (index) {
-            setState(() {
-              _bottomNavIndex = index;
-              _controller.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeInOut,
-              );
-            });
+            StudentNavigation.jumpToPage?.call(index);
           },
-          tabs: [
-            GButton(
-              icon: Icons.home_filled,
-              text: 'Home',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.dashboard_customize_rounded,
-              text: 'Appointments',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.storage_rounded,
-              text: 'Calendar',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.message_rounded,
-              text: 'Chat',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
+          tabs: const [
+            GButton(icon: Icons.home_filled, text: 'Welcome'),
+            GButton(icon: Icons.class_, text: 'Classes'),
+            GButton(icon: Icons.dashboard_customize_rounded, text: 'Book'),
+            GButton(icon: Icons.calendar_month, text: 'Calendar'),
+            GButton(icon: Icons.message_rounded, text: 'Chat'),
           ],
         ),
       ),
     );
   }
-}
-
-// Access this method anywhere to jump to a specific page:
-void navigateToStudentPage(int index) {
-  _HomePageState.jumpToPage(index);
 }

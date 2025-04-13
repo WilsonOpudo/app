@@ -1,27 +1,47 @@
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:meetme/app_navigation.dart';
+import 'package:meetme/state/profile_status.dart';
+
+import 'main.dart';
 import 'screens/prof_page1.dart';
 import 'screens/prof_page2.dart';
 import 'screens/prof_page3.dart';
 import 'screens/prof_page4.dart';
-import 'screens/professorWelcomePage.dart';
-import 'main.dart';
 import 'screens/profdetails.dart';
+import 'screens/professorWelcomePage.dart';
 
 class ProfessorHomePage extends StatefulWidget {
   const ProfessorHomePage({super.key});
 
   @override
-  State<ProfessorHomePage> createState() => _HomePageState();
+  State<ProfessorHomePage> createState() => _ProfessorHomePageState();
 }
 
-class _HomePageState extends State<ProfessorHomePage> {
+class _ProfessorHomePageState extends State<ProfessorHomePage> {
   final PageController _controller = PageController();
   int _bottomNavIndex = 0;
 
-  // Simulated profile check (replace with dynamic logic later)
-  bool isProfileIncomplete = true;
+  @override
+  void initState() {
+    super.initState();
+    AppNavigation.jumpToPage = (index) {
+      _controller.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _bottomNavIndex = index);
+    };
+  }
+
+  @override
+  void dispose() {
+    AppNavigation.jumpToPage = null;
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +55,10 @@ class _HomePageState extends State<ProfessorHomePage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProfDetailsPage()),
+              MaterialPageRoute(builder: (_) => const ProfDetailsPage()),
             ).then((_) {
-              // Optionally refresh profile state after returning from details
               setState(() {
-                // Here you can re-check if the profile is now complete
-                isProfileIncomplete = false; // simulate completion
+                ProfileStatus.isProfileIncomplete = false;
               });
             });
           },
@@ -61,8 +79,8 @@ class _HomePageState extends State<ProfessorHomePage> {
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoadingScreen()),
-                (Route<dynamic> route) => false,
+                MaterialPageRoute(builder: (_) => const LoadingScreen()),
+                (route) => false,
               );
             },
           ),
@@ -70,7 +88,7 @@ class _HomePageState extends State<ProfessorHomePage> {
       ),
       body: Column(
         children: [
-          if (isProfileIncomplete)
+          if (ProfileStatus.isProfileIncomplete)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -79,20 +97,20 @@ class _HomePageState extends State<ProfessorHomePage> {
                 child: ListTile(
                   leading: Icon(Icons.info_outline_rounded,
                       color: Colors.amber[800]),
-                  title: Text("Complete your profile details"),
+                  title: const Text("Complete your profile details"),
                   trailing: TextButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const ProfDetailsPage()),
+                            builder: (_) => const ProfDetailsPage()),
                       ).then((_) {
                         setState(() {
-                          isProfileIncomplete = false;
+                          ProfileStatus.isProfileIncomplete = false;
                         });
                       });
                     },
-                    child: Text("Edit"),
+                    child: const Text("Edit"),
                   ),
                 ),
               ),
@@ -107,7 +125,7 @@ class _HomePageState extends State<ProfessorHomePage> {
                       _bottomNavIndex = index;
                     });
                   },
-                  children: [
+                  children: const [
                     ProfessorWelcomePage(),
                     ProfessorPage1(),
                     ProfessorPage2(),
@@ -116,10 +134,10 @@ class _HomePageState extends State<ProfessorHomePage> {
                   ],
                 ),
                 Align(
-                  alignment: Alignment(0, 0.97),
+                  alignment: const Alignment(0, 0.97),
                   child: SmoothPageIndicator(
                     controller: _controller,
-                    count: 4,
+                    count: 5,
                     effect: WormEffect(
                       dotHeight: 10,
                       dotWidth: 10,
@@ -134,53 +152,22 @@ class _HomePageState extends State<ProfessorHomePage> {
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 0),
+        padding: const EdgeInsets.symmetric(horizontal: 15.0),
         child: GNav(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           gap: 8,
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           selectedIndex: _bottomNavIndex,
           onTabChange: (index) {
-            setState(() {
-              _bottomNavIndex = index;
-              _controller.animateToPage(
-                index,
-                duration: Duration(milliseconds: 600),
-                curve: Curves.easeInOut,
-              );
-            });
+            AppNavigation.jumpToPage?.call(index);
           },
-          tabs: [
+          tabs: const [
+            GButton(icon: Icons.home_filled, text: 'Welcome'),
+            GButton(icon: Icons.class_, text: 'Classes'),
             GButton(
-              icon: Icons.home_filled,
-              text: 'Welcome', // 🟢 Updated label
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.class_,
-              text: 'Classes',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.dashboard_customize_rounded,
-              text: 'Appointments',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.storage_rounded,
-              text: 'Calendar',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
-            GButton(
-              icon: Icons.message_rounded,
-              text: 'Chat',
-              iconActiveColor: Theme.of(context).shadowColor,
-              iconColor: Theme.of(context).hintColor,
-            ),
+                icon: Icons.dashboard_customize_rounded, text: 'Appointments'),
+            GButton(icon: Icons.storage_rounded, text: 'Calendar'),
+            GButton(icon: Icons.message_rounded, text: 'Chat'),
           ],
         ),
       ),
