@@ -132,6 +132,16 @@ class _StudentPage1State extends State<StudentPage1> {
     );
   }
 
+  String _getCourseIcon(String courseName) {
+    final name = courseName.toLowerCase();
+    if (name.contains('math')) return 'assets/math.jpg';
+    if (name.contains('science')) return 'assets/science.jpg';
+    if (name.contains('english')) return 'assets/english.jpg';
+    if (name.contains('history')) return 'assets/history.jpg';
+    if (name.contains('art')) return 'assets/art.jpg';
+    return 'assets/other.jpg';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,14 +233,14 @@ class _StudentPage1State extends State<StudentPage1> {
                 itemCount: joinedClasses.length,
                 itemBuilder: (context, index) {
                   final cls = joinedClasses[index];
+                  final iconPath = _getCourseIcon(cls['course_name']);
 
                   return Card(
                     child: ListTile(
                       leading: CircleAvatar(
                         radius: 24,
                         backgroundColor: Theme.of(context).shadowColor,
-                        backgroundImage:
-                            AssetImage('assets/logo-transparent-png.png'),
+                        backgroundImage: AssetImage(iconPath),
                       ),
                       title: Text(
                         cls['course_name'],
@@ -242,16 +252,13 @@ class _StudentPage1State extends State<StudentPage1> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(cls['professor_name'],
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontStyle: FontStyle.italic,
-                                  color: Theme.of(context).hintColor)),
-                          const SizedBox(height: 4),
-                          Text('Class Code: ${cls['course_id']}',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: Theme.of(context).hintColor)),
+                          Text(
+                            "Instructor: ${cls['professor_name']}",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                                color: Theme.of(context).hintColor),
+                          ),
                         ],
                       ),
                       onTap: () {

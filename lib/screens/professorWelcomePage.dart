@@ -184,9 +184,9 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
               children: grouped.entries.map((entry) {
                 final category = entry.key;
                 final classes = entry.value;

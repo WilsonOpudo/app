@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
-import 'package:meetme/screens/classes.dart'; // <--- Make sure this is the correct path
+import 'package:meetme/screens/classes.dart';
 import 'professorappointments.dart';
 
 class ProfessorPage1 extends StatefulWidget {
@@ -40,6 +40,16 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
     final rand = Random();
     return List.generate(4, (index) => chars[rand.nextInt(chars.length)])
         .join();
+  }
+
+  String _getCourseIcon(String courseName) {
+    final name = courseName.toLowerCase();
+    if (name.contains('math')) return 'assets/math.jpg';
+    if (name.contains('science')) return 'assets/science.jpg';
+    if (name.contains('english')) return 'assets/english.jpg';
+    if (name.contains('history')) return 'assets/history.jpg';
+    if (name.contains('art')) return 'assets/art.jpg';
+    return 'assets/other.jpg';
   }
 
   Future<void> _createClassDialog(BuildContext context) async {
@@ -112,6 +122,7 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                     courseName: name,
                     professorName: username!,
                     professorEmail: email!,
+                    description: desc,
                   );
 
                   setState(() {
@@ -162,7 +173,7 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
           gradient: LinearGradient(
             colors: [
               Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).scaffoldBackgroundColor
+              Theme.of(context).scaffoldBackgroundColor,
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -238,14 +249,14 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                 itemCount: createdClasses.length,
                 itemBuilder: (context, index) {
                   final cls = createdClasses[index];
+                  final iconPath = _getCourseIcon(cls['course_name']);
                   return Card(
                     elevation: 2,
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).shadowColor,
                         radius: 24,
-                        backgroundImage:
-                            const AssetImage('assets/logo-transparent-png.png'),
+                        backgroundColor: Theme.of(context).shadowColor,
+                        backgroundImage: AssetImage(iconPath),
                       ),
                       title: Text(
                         cls['course_name'],

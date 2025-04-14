@@ -81,7 +81,7 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                 selectionColor: Theme.of(context).primaryColor,
                 selectedTextColor: Theme.of(context).scaffoldBackgroundColor,
                 locale: 'en_US',
-                daysCount: 14,
+                daysCount: 7,
                 onDateChange: (date) {
                   setState(() {
                     _selectedDate = date;

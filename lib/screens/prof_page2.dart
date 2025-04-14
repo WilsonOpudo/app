@@ -83,15 +83,27 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
                       date: selectedDate.toIso8601String().split('T').first,
                       time: formattedTime,
                     );
+
                     if (Navigator.canPop(context)) Navigator.pop(context);
                     await _loadAvailableSlots();
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Slot added successfully')),
+                      const SnackBar(
+                          content: Text('✅ Slot added successfully')),
                     );
                   } catch (e) {
                     if (Navigator.canPop(context)) Navigator.pop(context);
+
+                    String errorMessage = "❌ Failed to save slot";
+                    if (e
+                        .toString()
+                        .contains("Slot already exists for another class")) {
+                      errorMessage =
+                          "⚠️ This time slot is already used in another class. Choose a different time.";
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to save slot: $e')),
+                      SnackBar(content: Text(errorMessage)),
                     );
                   }
                 },

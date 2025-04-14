@@ -92,7 +92,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Card(
+              /*child: Card(
                 color: Colors.amber[100],
                 child: ListTile(
                   leading: Icon(Icons.info_outline_rounded,
@@ -113,7 +113,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
                     child: const Text("Edit"),
                   ),
                 ),
-              ),
+              ),*/
             ),
           Expanded(
             child: Stack(

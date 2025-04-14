@@ -125,7 +125,7 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                           fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     subtitle: Text(
-                      "Instructor: ${cls['professor_name']}\nCode: ${cls['course_id']}",
+                      "Instructor: ${cls['professor_name']}",
                       style: const TextStyle(fontSize: 13),
                     ),
                     onTap: () {

@@ -1,11 +1,52 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ApiService {
   static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
   //static const String baseUrl = 'http://10.0.2.2:8000'; // andriod emulator
   //static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
+  //static const String baseUrl = 'http://10.80.82.55:8000';
+
+  static WebSocketChannel? _channel;
+
+  static WebSocketChannel connectToChat(String userId) {
+    _channel = WebSocketChannel.connect(
+      Uri.parse('ws://127.0.0.1:8000/ws/chat/$userId'),
+    );
+    return _channel!;
+  }
+
+  static void sendMessage(String senderId, String receiverId, String message) {
+    if (_channel != null) {
+      final data = {
+        'sender_id': senderId,
+        'receiver_id': receiverId,
+        'message': message,
+      };
+      _channel!.sink.add(jsonEncode(data));
+    }
+  }
+
+  static void disconnectChat() {
+    _channel?.sink.close();
+    _channel = null;
+  }
+
+  static Future<List<Map<String, dynamic>>> getChatHistory(
+      String user1, String user2) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/chat/history?user1=$user1&user2=$user2'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to fetch chat history: ${response.body}');
+    }
+  }
 
   // You can still save email/role if needed
   static Future<void> saveUserInfo(String email, String role,
@@ -79,7 +120,8 @@ class ApiService {
     required String courseId,
     required String courseName,
     required String professorName,
-    required String professorEmail, // ✅ Add this
+    required String professorEmail,
+    String? description, // <- Add this
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/classes'),
@@ -88,7 +130,8 @@ class ApiService {
         'course_id': courseId,
         'course_name': courseName,
         'professor_name': professorName,
-        'professor_email': professorEmail, // ✅ Include in body
+        'professor_email': professorEmail,
+        'description': description ?? '', // <- Send this too
       }),
     );
 
@@ -422,6 +465,33 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception("Failed to reschedule appointment: ${response.body}");
+    }
+  }
+
+  static Future<String> getAppointmentStatus(String appointmentId) async {
+    final response = await http
+        .get(Uri.parse('$baseUrl/appointments/status/$appointmentId'));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['status'] ?? 'unknown';
+    } else {
+      throw Exception('Failed to get status');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getStudentsInClass(
+      String courseId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/classes/$courseId/students'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception(
+          'Failed to fetch students for class $courseId: ${response.body}');
     }
   }
 }
