@@ -163,10 +163,11 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
 // 🔴 Generate unique red-tinted colors based on course name
 Color generateRedTint(String key) {
   final hash = key.hashCode;
-  final red = 200 + (hash % 55); // Strong red
-  final green = 30 + (hash % 30); // Low green
-  final blue = 30 + (hash % 30); // Low blue
-  return Color.fromARGB(255, red, green, blue);
+  final hue = (hash % 360).toDouble(); // hue between 0 and 359
+  final saturation = 0.5 + (hash % 50) / 100; // saturation 0.5–1.0
+  final brightness = 0.7 + (hash % 30) / 100; // brightness 0.7–1.0
+
+  return HSVColor.fromAHSV(1.0, hue, saturation, brightness).toColor();
 }
 
 class MeetingDataSource extends CalendarDataSource {

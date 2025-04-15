@@ -385,8 +385,9 @@ class LoadingScreenState extends State<LoadingScreen> {
                                     width: 330,
                                     height: 55,
                                     child: ElevatedButton(
-                                      onPressed: () {
-                                        AuthController.handleSignUpOrLogin(
+                                      onPressed: () async {
+                                        final success = await AuthController
+                                            .handleSignUpOrLogin(
                                           email: _emailController.text.trim(),
                                           username: _userController.text.trim(),
                                           password: _passController.text.trim(),
@@ -394,16 +395,17 @@ class LoadingScreenState extends State<LoadingScreen> {
                                           isProfessor: _isProfessor,
                                           isStudent: _isStudent,
                                           context: context,
-                                        ).then((_) {
+                                        );
+
+                                        // ✅ Use success only here — it's properly declared now
+                                        if (success && _isSignUp) {
                                           setState(() {
-                                            if (_isSignUp) {
-                                              _isSignUp = false;
-                                              _isProfessor = false;
-                                              _isStudent = false;
-                                              _resetTextFields();
-                                            }
+                                            _isSignUp = false;
+                                            _isProfessor = false;
+                                            _isStudent = false;
+                                            _resetTextFields();
                                           });
-                                        });
+                                        }
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Theme.of(context)

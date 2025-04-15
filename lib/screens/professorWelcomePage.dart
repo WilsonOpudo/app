@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:meetme/api_service.dart';
-import 'package:meetme/app_navigation.dart'; // ✅ for jumpToPage
+import 'package:meetme/app_navigation.dart';
 import 'professorappointments.dart';
-import 'CourseGroupPage.dart';
+import 'package:meetme/screens/courseGroupPage.dart';
+import 'package:meetme/screens/classes.dart'; // Assumed ClassStudentsPage
 
 class ProfessorWelcomePage extends StatefulWidget {
   const ProfessorWelcomePage({super.key});
@@ -15,6 +16,7 @@ class ProfessorWelcomePage extends StatefulWidget {
 class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   List<Map<String, dynamic>> createdClasses = [];
   List<Map<String, dynamic>> todayAppointments = [];
+  List<Map<String, dynamic>> upcomingAppointments = [];
   String? professorEmail;
   String? username;
 
@@ -52,23 +54,58 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
           .where((cls) => cls['professor_email'] == professorEmail)
           .toList();
 
-      List<Map<String, dynamic>> appointments = [];
+      List<Map<String, dynamic>> enrichedClasses = [];
+      List<Map<String, dynamic>> allAppointments = [];
+
       for (final cls in filtered) {
-        final appts =
-            await ApiService.getProfessorAppointments(cls['course_id']);
-        appointments.addAll(appts);
+        // Safely get students
+        try {
+          final students =
+              await ApiService.getStudentsInClass(cls['course_id']);
+          cls['student_count'] = students.length;
+        } catch (e) {
+          print('⚠️ Failed to load students for ${cls['course_id']}: $e');
+          cls['student_count'] = 0;
+        }
+
+        // Safely get appointments
+        try {
+          final appts =
+              await ApiService.getProfessorAppointments(cls['course_id']);
+          if (appts is List) {
+            allAppointments.addAll(appts);
+          }
+        } catch (e) {
+          print('⚠️ Failed to load appointments for ${cls['course_id']}: $e');
+        }
+
+        enrichedClasses.add(cls);
       }
 
-      final today = DateTime.now();
-      todayAppointments = appointments.where((appt) {
+      final now = DateTime.now();
+
+      todayAppointments = allAppointments.where((appt) {
         final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
         return apptDate != null &&
-            apptDate.year == today.year &&
-            apptDate.month == today.month &&
-            apptDate.day == today.day;
-      }).toList();
+            apptDate.year == now.year &&
+            apptDate.month == now.month &&
+            apptDate.day == now.day;
+      }).toList()
+        ..sort((a, b) => DateTime.parse(a['appointment_date'])
+            .compareTo(DateTime.parse(b['appointment_date'])));
 
-      setState(() => createdClasses = filtered);
+      upcomingAppointments = allAppointments.where((appt) {
+        final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
+        return apptDate != null &&
+            (apptDate.isAfter(now) &&
+                !(apptDate.year == now.year &&
+                    apptDate.month == now.month &&
+                    apptDate.day == now.day));
+      }).toList()
+        ..sort((a, b) => DateTime.parse(a['appointment_date'])
+            .compareTo(DateTime.parse(b['appointment_date'])));
+
+      setState(() => createdClasses = enrichedClasses);
     }
   }
 
@@ -93,6 +130,14 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     return grouped;
   }
 
+  String _getCourseImage(String courseName) {
+    final lower = courseName.toLowerCase();
+    for (final entry in courseImages.entries) {
+      if (lower.contains(entry.key.toLowerCase())) return entry.value;
+    }
+    return courseImages['Other']!;
+  }
+
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
@@ -102,8 +147,8 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final grouped = _groupByCategory();
     final greeting = _getGreeting();
+    final grouped = _groupByCategory();
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -114,8 +159,6 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
             Text("$greeting, ${username ?? 'Professor'}!",
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-
-            // 🔹 Quick Action Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -138,113 +181,96 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
             ),
             const SizedBox(height: 20),
 
-            // 🔹 Today’s Appointments
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Today's Appointments",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                TextButton.icon(
-                  icon: const Icon(Icons.view_list, size: 16),
-                  label: const Text("View All"),
-                  onPressed: () {
+            // 🔹 Today's Appointments
+            _buildSectionTitle("Today's Appointments"),
+            _buildAppointmentsList(todayAppointments),
+
+            const SizedBox(height: 24),
+            _buildSectionTitle("Upcoming Appointments"),
+            _buildAppointmentsList(upcomingAppointments),
+
+            const SizedBox(height: 24),
+            _buildSectionTitle("Your Course Categories"),
+            const SizedBox(height: 8),
+            const Text(
+              "Explore and manage your classes by tapping on them below.",
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+
+            // 🔹 Compact Swipeable Grid using Wrap
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: courseImages.keys.length,
+              itemBuilder: (context, index) {
+                final category = courseImages.keys.elementAt(index);
+                final classList = grouped[category] ?? [];
+
+                return ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      courseImages[category]!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  title: Text(
+                    category,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                      "${classList.length} class${classList.length == 1 ? '' : 'es'}"),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ProfessorAppointmentsPage()),
+                        builder: (_) => CourseGroupPage(
+                          courseName: category,
+                          matchingClasses: classList,
+                        ),
+                      ),
                     );
                   },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (todayAppointments.isEmpty)
-              const Text("No upcoming appointments for today.",
-                  style: TextStyle(color: Colors.grey))
-            else
-              ...todayAppointments.map((appt) {
-                final time = DateFormat.jm()
-                    .format(DateTime.parse(appt['appointment_date']));
-                return ListTile(
-                  leading: const Icon(Icons.access_time,
-                      color: Colors.teal, size: 20),
-                  title:
-                      Text("${appt['student_name']} - ${appt['course_name']}"),
-                  subtitle: Text(time),
                 );
-              }),
-
-            const SizedBox(height: 24),
-
-            const Text("Your Course Categories",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1,
-              children: grouped.entries.map((entry) {
-                final category = entry.key;
-                final classes = entry.value;
-                final imgPath = courseImages[category]!;
-
-                return GestureDetector(
-                  onTap: () {
-                    if (classes.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CourseGroupPage(
-                            courseName: category,
-                            matchingClasses: classes,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage(imgPath),
-                        fit: BoxFit.cover,
-                        colorFilter: classes.isEmpty
-                            ? ColorFilter.mode(
-                                Colors.black.withOpacity(0.4), BlendMode.darken)
-                            : null,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.all(12),
-                    alignment: Alignment.bottomLeft,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(category,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                        Text(
-                          classes.isEmpty
-                              ? "No class yet"
-                              : "${classes.length} class${classes.length > 1 ? 'es' : ''}",
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+              },
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildAppointmentsList(List<Map<String, dynamic>> appointments) {
+    if (appointments.isEmpty) {
+      return const Text("No upcoming appointments.",
+          style: TextStyle(color: Colors.grey));
+    }
+
+    return Column(
+      children: appointments.map((appt) {
+        final dt = DateTime.tryParse(appt['appointment_date'] ?? '');
+        if (dt == null) return const SizedBox(); // Skip if invalid date
+
+        final date = DateFormat.yMMMd().format(dt);
+        final time = DateFormat.jm().format(dt);
+        return ListTile(
+          leading: const Icon(Icons.event_note, color: Colors.indigo),
+          title: Text(
+              "${appt['student_name'] ?? 'Unknown'} - ${appt['course_name'] ?? 'Unknown'}"),
+          subtitle: Text("$date • $time"),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) => Text(title,
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16));
 
   Widget _quickAction({
     required IconData icon,

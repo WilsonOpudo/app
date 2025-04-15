@@ -80,7 +80,9 @@ class _StudentPage2State extends State<StudentPage2> {
         dateTime: dateTime,
       );
 
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Only pop if it's not already popped
+      }
       await _loadAvailableSlots(courseId);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("✅ Appointment booked at $time")),
@@ -88,7 +90,10 @@ class _StudentPage2State extends State<StudentPage2> {
     } catch (e) {
       final error = e.toString().contains("already booked")
           ? "⛔ You already booked this slot."
-          : "❌ Booking failed: $e";
+          : e.toString().contains("Slot no longer available")
+              ? "⛔ That slot was just booked by another student."
+              : "❌ Booking failed: $e";
+
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error)));
     }
@@ -97,30 +102,106 @@ class _StudentPage2State extends State<StudentPage2> {
   Future<void> _showSlotPicker(String courseId, String courseName) async {
     final professorEmail =
         await ApiService.getProfessorEmailFromCourse(courseId);
-
     final classData = enrolledClasses.firstWhere(
       (c) => c['course_id'] == courseId,
       orElse: () => {},
     );
-
     final professorName =
         classData['professor_name'] ?? professorEmail.split('@')[0];
 
     await _loadAvailableSlots(courseId);
 
-    // Sort slots by time
-    availableSlots.sort((a, b) => a['time'].compareTo(b['time']));
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+
+// Sort all slots before grouping
+    availableSlots.sort((a, b) => (a['time'] ?? '').compareTo(b['time'] ?? ''));
+
+// Group slots into AM and PM, sorted
+    final amSlots = availableSlots.where((slot) {
+      final hour = int.tryParse(slot['time']?.split(':').first ?? '0') ?? 0;
+      return hour < 12;
+    }).toList();
+
+    final pmSlots = availableSlots.where((slot) {
+      final hour = int.tryParse(slot['time']?.split(':').first ?? '0') ?? 0;
+      return hour >= 12;
+    }).toList();
+
+    Widget buildSlotRow(List<Map<String, dynamic>> slots, String label) {
+      if (slots.isEmpty) return const SizedBox();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, top: 8, bottom: 4),
+            child: Text(label,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          SizedBox(
+            height: 46,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: slots.length,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final time = slots[index]['time'];
+                final hour = int.tryParse(time.split(":").first) ?? 0;
+                final minute = int.tryParse(time.split(":")[1]) ?? 0;
+                final fullDate = DateTime(selectedDate.year, selectedDate.month,
+                    selectedDate.day, hour, minute);
+
+                final isPast = isToday && fullDate.isBefore(now);
+
+                return OutlinedButton(
+                  onPressed: isPast
+                      ? null
+                      : () {
+                          Navigator.of(context)
+                              .pop(); // ❌ This prematurely closes the dialog
+                          _bookSlot(courseId, courseName, professorEmail,
+                              professorName, time);
+                        },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    backgroundColor:
+                        isPast ? Colors.grey.shade700 : Colors.transparent,
+                    side: BorderSide(
+                        color: isPast ? Colors.grey : Colors.white70,
+                        width: 1.2),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text(
+                    time,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isPast ? Colors.grey.shade300 : Colors.white,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
 
     showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: Colors.black87,
       builder: (context) {
         return Center(
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.85,
+            width: MediaQuery.of(context).size.width * 0.9,
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
             decoration: BoxDecoration(
-              color: Colors.grey[900], // Dark background
+              color: Colors.grey[900],
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -143,38 +224,15 @@ class _StudentPage2State extends State<StudentPage2> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   if (availableSlots.isEmpty)
-                    const Text("No slots available",
-                        style: TextStyle(color: Colors.white70)),
-                  ...availableSlots.map((slot) {
-                    final time = slot['time'];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 14),
-                          side: const BorderSide(
-                              color: Colors.white24, width: 1.2),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Close popup
-                          _bookSlot(courseId, courseName, professorEmail,
-                              professorName, time);
-                        },
-                        child: Text(
-                          time,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text("No slots available",
+                          style: TextStyle(color: Colors.white70)),
+                    ),
+                  if (amSlots.isNotEmpty) buildSlotRow(amSlots, "Morning"),
+                  if (pmSlots.isNotEmpty) buildSlotRow(pmSlots, "Afternoon"),
                 ],
               ),
             ),

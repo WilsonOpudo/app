@@ -4,16 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
+  //static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
   //static const String baseUrl = 'http://10.0.2.2:8000'; // andriod emulator
-  //static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
+  static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
   //static const String baseUrl = 'http://10.80.82.55:8000';
 
   static WebSocketChannel? _channel;
 
   static WebSocketChannel connectToChat(String userId) {
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://127.0.0.1:8000/ws/chat/$userId'),
+      //Uri.parse('ws://127.0.0.1:8000/ws/chat/$userId'),
+      Uri.parse('ws://192.168.12.223:8000/ws/chat/$userId'),
     );
     return _channel!;
   }
@@ -492,6 +493,32 @@ class ApiService {
     } else {
       throw Exception(
           'Failed to fetch students for class $courseId: ${response.body}');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString('email');
+
+    if (email == null) throw Exception('No user email stored.');
+
+    final url = Uri.parse('$baseUrl/notifications/$email');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Failed to fetch notifications');
+    }
+  }
+
+  static Future<void> markNotificationAsRead(String notificationId) async {
+    final url = Uri.parse('$baseUrl/notifications/$notificationId/mark-read');
+    final response = await http.post(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to mark notification as read');
     }
   }
 }

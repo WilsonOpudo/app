@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:meetme/student_navigation.dart';
-
+import 'package:meetme/api_service.dart';
 import 'main.dart';
 import 'screens/studentwelcomepage.dart';
 import 'screens/stu_page1.dart';
 import 'screens/stu_page2.dart';
 import 'screens/stu_page3.dart';
 import 'screens/stu_page4.dart';
+import 'screens/student_notifications.dart'; // ← Add this screen
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key});
@@ -47,10 +48,50 @@ class _StudentHomePageState extends State<StudentHomePage> {
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        leading: IconButton(
-          icon: Icon(Icons.person, color: Theme.of(context).shadowColor),
-          onPressed: () {
-            // Optional: Navigate to student profile
+        leading: FutureBuilder<List<Map<String, dynamic>>>(
+          future: ApiService.getNotifications(),
+          builder: (context, snapshot) {
+            final notifications = snapshot.data ?? [];
+            final unreadCount =
+                notifications.where((n) => n['read'] == false).length;
+
+            return IconButton(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.notifications_none_rounded, size: 26),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount.toString(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              color: Theme.of(context).shadowColor,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StudentNotificationsPage(),
+                  ),
+                );
+                setState(() {}); // 👈 re-triggers unread count when user return
+              },
+            );
           },
         ),
         title: Text(

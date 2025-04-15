@@ -16,6 +16,7 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
   String? username;
   List<Map<String, dynamic>> joinedClasses = [];
   List<Map<String, dynamic>> todayAppointments = [];
+  List<Map<String, dynamic>> upcomingAppointments = [];
 
   @override
   void initState() {
@@ -30,21 +31,41 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
 
     if (email != null) {
       final classes = await ApiService.getEnrolledClasses(email);
-      final appts = await ApiService.getAppointments(email);
-      final today = DateTime.now();
+      final classIds =
+          classes.map((c) => c['course_id']).toSet(); // keep valid class IDs
 
-      final todays = appts.where((appt) {
+      final appts = await ApiService.getAppointments(email);
+      final now = DateTime.now();
+
+      final todays = <Map<String, dynamic>>[];
+      final upcoming = <Map<String, dynamic>>[];
+
+      for (final appt in appts) {
+        if (!classIds.contains(appt['course_id']))
+          continue; // ❌ skip deleted class appointments
+
         final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
-        return apptDate != null &&
-            apptDate.year == today.year &&
-            apptDate.month == today.month &&
-            apptDate.day == today.day;
-      }).toList();
+        if (apptDate != null) {
+          if (apptDate.year == now.year &&
+              apptDate.month == now.month &&
+              apptDate.day == now.day) {
+            todays.add(appt);
+          } else if (apptDate.isAfter(now)) {
+            upcoming.add(appt);
+          }
+        }
+      }
+
+      todays.sort((a, b) => DateTime.parse(a['appointment_date'])
+          .compareTo(DateTime.parse(b['appointment_date'])));
+      upcoming.sort((a, b) => DateTime.parse(a['appointment_date'])
+          .compareTo(DateTime.parse(b['appointment_date'])));
 
       setState(() {
         username = user;
         joinedClasses = classes;
         todayAppointments = todays;
+        upcomingAppointments = upcoming;
       });
     }
   }
@@ -70,7 +91,7 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                 style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 16),
 
-            // 📅 Appointments Today
+            // 🔸 Today's Appointments
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -96,17 +117,56 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                 final time = DateFormat.jm()
                     .format(DateTime.parse(appt['appointment_date']));
                 return ListTile(
-                  leading: const Icon(Icons.access_time, color: Colors.teal),
+                  leading: const Icon(Icons.calendar_today,
+                      color: Color.fromARGB(255, 201, 66, 21)),
                   title: Text(appt['course_name']),
                   subtitle: Text(time),
                 );
               }),
 
             const SizedBox(height: 20),
+
+            // 🔸 Upcoming Appointments
+            const Text("Upcoming Appointments",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            if (upcomingAppointments.isEmpty)
+              const Text("No upcoming appointments.",
+                  style: TextStyle(color: Colors.grey))
+            else
+              ...upcomingAppointments.map((appt) {
+                final dt = DateTime.parse(appt['appointment_date']);
+                final date = DateFormat.yMMMd().format(dt);
+                final time = DateFormat.jm().format(dt);
+                return ListTile(
+                  leading:
+                      const Icon(Icons.calendar_today, color: Colors.orange),
+                  title: Text(appt['course_name']),
+                  subtitle: Text("$date • $time"),
+                );
+              }),
+
+            const SizedBox(height: 24),
+
+            // 🔸 Moved Quick Actions here
+            const Text("Quick Actions",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _quickAction(Icons.add, "Book", 2),
+                _quickAction(Icons.group_add, "Join", 1),
+                _quickAction(Icons.calendar_month, "Calendar", 3),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // 🔸 Enrolled Classes
             const Text("Enrolled Classes",
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -160,20 +220,6 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                   ),
                 );
               },
-            ),
-
-            const SizedBox(height: 24),
-            const Text("Quick Actions",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _quickAction(Icons.add, "Book", 2),
-                _quickAction(Icons.group_add, "Join", 1),
-                _quickAction(Icons.calendar_month, "Calendar", 3),
-              ],
             ),
 
             const SizedBox(height: 24),

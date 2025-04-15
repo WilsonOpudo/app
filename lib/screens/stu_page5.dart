@@ -29,7 +29,8 @@ class _StudentPage5State extends State<StudentPage5> {
   void initState() {
     super.initState();
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://127.0.0.1:8000/ws/chat/${widget.senderId}'),
+      //Uri.parse('ws://127.0.0.1:8000/ws/chat/${widget.senderId}'),
+      Uri.parse('ws://192.168.12.223:8000/ws/chat/${widget.senderId}'),
     );
 
     _channel.stream.listen((data) {

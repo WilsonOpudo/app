@@ -213,7 +213,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildSection("📅 Today", today,
-                        cardColor: Colors.blue.shade50),
+                        cardColor: Colors.blue.shade50, showCancel: true),
                     _buildSection("⏭ Upcoming", upcoming,
                         cardColor: Colors.green.shade50, showCancel: true),
                     _buildSection("⏪ Past", past,

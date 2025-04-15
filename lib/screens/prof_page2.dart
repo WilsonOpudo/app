@@ -55,6 +55,11 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
   Future<void> _addAvailableSlot(BuildContext context) async {
     if (selectedCourseId == null || professorEmail == null) return;
 
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -69,46 +74,60 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
             spacing: 8.0,
             runSpacing: 8.0,
             children: List.generate(15, (index) {
-              final startTime =
-                  TimeOfDay(hour: 10 + (index ~/ 2), minute: (index % 2) * 30);
+              final hour = 10 + (index ~/ 2);
+              final minute = (index % 2) * 30;
+              final slotTime = DateTime(selectedDate.year, selectedDate.month,
+                  selectedDate.day, hour, minute);
               final formattedTime =
-                  '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+                  '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+              final isPast = isToday && slotTime.isBefore(now);
 
               return ElevatedButton(
-                onPressed: () async {
-                  try {
-                    await ApiService.saveAvailableSlot(
-                      professorEmail: professorEmail!,
-                      courseId: selectedCourseId!,
-                      date: selectedDate.toIso8601String().split('T').first,
-                      time: formattedTime,
-                    );
+                onPressed: isPast
+                    ? null
+                    : () async {
+                        try {
+                          await ApiService.saveAvailableSlot(
+                            professorEmail: professorEmail!,
+                            courseId: selectedCourseId!,
+                            date:
+                                selectedDate.toIso8601String().split('T').first,
+                            time: formattedTime,
+                          );
 
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                    await _loadAvailableSlots();
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          await _loadAvailableSlots();
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('✅ Slot added successfully')),
-                    );
-                  } catch (e) {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('✅ Slot added successfully')),
+                          );
+                        } catch (e) {
+                          if (Navigator.canPop(context)) Navigator.pop(context);
 
-                    String errorMessage = "❌ Failed to save slot";
-                    if (e
-                        .toString()
-                        .contains("Slot already exists for another class")) {
-                      errorMessage =
-                          "⚠️ This time slot is already used in another class. Choose a different time.";
-                    }
+                          String errorMessage = "❌ Failed to save slot";
+                          if (e.toString().contains(
+                              "Slot already exists for another class")) {
+                            errorMessage =
+                                "⚠️ This time slot is already used in another class. Choose a different time.";
+                          }
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(errorMessage)),
-                    );
-                  }
-                },
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(errorMessage)),
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isPast
+                      ? Colors.grey.shade300
+                      : Theme.of(context).primaryColor,
+                ),
                 child: Text(formattedTime,
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 12)),
+                    style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: isPast ? Colors.grey : Colors.white)),
               );
             }),
           ),
@@ -159,19 +178,29 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
   }
 
   List<Widget> _buildGroupedSlots() {
-    final amSlots = availableSlots.where((s) {
+    List<Map<String, dynamic>> parseAndSort(List<Map<String, dynamic>> slots) {
+      return slots
+        ..sort((a, b) {
+          final t1 = a['time']!;
+          final t2 = b['time']!;
+          return DateTime.parse("1970-01-01T$t1:00")
+              .compareTo(DateTime.parse("1970-01-01T$t2:00"));
+        });
+    }
+
+    final amSlots = parseAndSort(availableSlots.where((s) {
       final time = s['time'];
       if (time == null) return false;
       final hour = int.tryParse(time.split(':').first) ?? 0;
       return hour < 12;
-    }).toList();
+    }).toList());
 
-    final pmSlots = availableSlots.where((s) {
+    final pmSlots = parseAndSort(availableSlots.where((s) {
       final time = s['time'];
       if (time == null) return false;
       final hour = int.tryParse(time.split(':').first) ?? 0;
       return hour >= 12;
-    }).toList();
+    }).toList());
 
     Widget buildGroup(String label, List<Map<String, dynamic>> slots) {
       if (slots.isEmpty) return SizedBox();

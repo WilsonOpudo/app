@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
+import 'package:meetme/student_navigation.dart'; // ✅ Make sure this is imported
 
 class ProfessorClassDetailsPage extends StatefulWidget {
   final String courseId;
@@ -22,6 +23,7 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
   String? description;
   String? professorName;
   String? courseCode;
+  String? userRole;
 
   @override
   void initState() {
@@ -29,12 +31,10 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
     _loadClassDetails();
   }
 
-  String? userRole;
-
   Future<void> _loadClassDetails() async {
     try {
       final userInfo = await ApiService.getUserInfo();
-      userRole = userInfo['role']; // either "student" or "professor"
+      userRole = userInfo['role']; // "student" or "professor"
 
       final classData = await ApiService.getClassById(widget.courseId);
       setState(() {
@@ -52,6 +52,22 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
     }
   }
 
+  void _navigateToAppointmentPage() {
+    Navigator.pop(context);
+    Future.delayed(const Duration(milliseconds: 100), () async {
+      int retries = 0;
+      while (StudentNavigation.jumpToPage == null && retries < 10) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
+      }
+      if (StudentNavigation.jumpToPage != null) {
+        StudentNavigation.jumpToPage!(2); // 📍 Index 2 for `stu_page2`
+      } else {
+        debugPrint("❌ Navigation to stu_page2 failed.");
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +82,6 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Heading
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
@@ -77,22 +92,14 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
                     ),
                   ),
                 ),
-
-                // ✅ Subheading
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     "Instructor: ${professorName ?? 'Unknown'}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // ✅ Square Description + Info Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
@@ -101,11 +108,11 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
                     decoration: BoxDecoration(
                       color: Colors.blueGrey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 5,
-                          offset: const Offset(0, 2),
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
@@ -117,32 +124,21 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
                           style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 8),
-                        if (userRole ==
-                            "professor") // 🔒 Only professors see this
+                        if (userRole == "professor")
                           Text(
                             "Class Code: $courseCode",
                             style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
+                                fontSize: 14, color: Colors.grey),
                           ),
                       ],
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
-                // ✅ New Appointment Button
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Future.delayed(Duration.zero, () {
-                        widget.onNavigateToAppointments();
-                      });
-                    },
+                    onPressed: _navigateToAppointmentPage,
                     icon: const Icon(Icons.calendar_today_rounded),
                     label: const Text("New Appointment"),
                     style: ElevatedButton.styleFrom(

@@ -13,7 +13,9 @@ class ProfessorPage1 extends StatefulWidget {
 
 class _ProfessorPage1State extends State<ProfessorPage1> {
   List<Map<String, dynamic>> createdClasses = [];
+  List<Map<String, dynamic>> filteredClasses = [];
   String? professorEmail;
+  String searchQuery = "";
 
   @override
   void initState() {
@@ -27,12 +29,21 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
 
     if (professorEmail != null) {
       final allClasses = await ApiService.getClasses();
-      setState(() {
-        createdClasses = allClasses
-            .where((cls) => cls['professor_email'] == professorEmail)
-            .toList();
-      });
+      createdClasses = allClasses
+          .where((cls) => cls['professor_email'] == professorEmail)
+          .toList();
+      _applyFilter();
     }
+  }
+
+  void _applyFilter() {
+    setState(() {
+      filteredClasses = createdClasses
+          .where((cls) => cls['course_name']
+              .toLowerCase()
+              .contains(searchQuery.toLowerCase()))
+          .toList();
+    });
   }
 
   String _generateClassCode() {
@@ -59,51 +70,26 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        title: Text(
-          'Create New Class',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).shadowColor,
-          ),
-        ),
+        title: const Text('Create New Class'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: classNameController,
-                decoration: InputDecoration(
-                  labelText: 'Class Name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+                  controller: classNameController,
+                  decoration: const InputDecoration(labelText: 'Class Name')),
               const SizedBox(height: 10),
               TextField(
-                controller: descriptionController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+                  controller: descriptionController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description')),
             ],
           ),
         ),
         actions: [
           TextButton(
-            child: Text('Cancel',
-                style:
-                    TextStyle(color: Theme.of(context).secondaryHeaderColor)),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel')),
           ElevatedButton(
             child: const Text('Create Class'),
             onPressed: () async {
@@ -112,51 +98,30 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
               final code = _generateClassCode();
 
               if (name.isNotEmpty) {
-                try {
-                  final userInfo = await ApiService.getUserInfo();
-                  final username = userInfo['username'];
-                  final email = userInfo['email'];
+                final userInfo = await ApiService.getUserInfo();
+                final username = userInfo['username'];
+                final email = userInfo['email'];
 
-                  await ApiService.createClass(
-                    courseId: code,
-                    courseName: name,
-                    professorName: username!,
-                    professorEmail: email!,
-                    description: desc,
-                  );
+                await ApiService.createClass(
+                  courseId: code,
+                  courseName: name,
+                  professorName: username!,
+                  professorEmail: email!,
+                  description: desc,
+                );
 
-                  setState(() {
-                    createdClasses.add({
-                      'course_id': code,
-                      'course_name': name,
-                      'description': desc,
-                      'professor_name': username,
-                      'professor_email': email,
-                    });
+                setState(() {
+                  createdClasses.add({
+                    'course_id': code,
+                    'course_name': name,
+                    'description': desc,
+                    'professor_name': username,
+                    'professor_email': email,
                   });
+                  _applyFilter();
+                });
 
-                  Navigator.of(context).pop();
-
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Class Created!'),
-                      content:
-                          Text('Share this code with students to join: $code'),
-                      actions: [
-                        TextButton(
-                          child: const Text('OK'),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                  );
-                } catch (e) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error creating class: $e')),
-                  );
-                }
+                Navigator.of(context).pop();
               }
             },
           ),
@@ -165,201 +130,142 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
     );
   }
 
+  Future<void> _deleteClass(int index, Map<String, dynamic> cls) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure you want to delete this class?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ApiService.deleteClass(cls['course_id']);
+        createdClasses.removeWhere((c) => c['course_id'] == cls['course_id']);
+        _applyFilter();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Class deleted successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete class: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).scaffoldBackgroundColor,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'My Classes',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).shadowColor,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.event_note, size: 24),
-                        color: Colors.teal,
-                        tooltip: "View Appointments",
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ProfessorAppointmentsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add_rounded,
-                            color: Theme.of(context).shadowColor, size: 25),
-                        onPressed: () => _createClassDialog(context),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search Classes',
-                  hintStyle: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).hintColor,
-                    fontFamily: 'Poppins',
-                  ),
-                  prefixIcon:
-                      Icon(Icons.search, color: Theme.of(context).shadowColor),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).scaffoldBackgroundColor,
-                ),
-                onChanged: (value) {
-                  // Optional filtering
-                },
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: createdClasses.length,
-                itemBuilder: (context, index) {
-                  final cls = createdClasses[index];
-                  final iconPath = _getCourseIcon(cls['course_name']);
-                  return Card(
-                    elevation: 2,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Theme.of(context).shadowColor,
-                        backgroundImage: AssetImage(iconPath),
-                      ),
-                      title: Text(
-                        cls['course_name'],
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).shadowColor,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cls['professor_name'],
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontStyle: FontStyle.italic,
-                              color: Theme.of(context).hintColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          if (cls['description'] != null)
-                            Text(
-                              cls['description'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).hintColor,
-                              ),
-                            ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Class Code: ${cls['course_id']}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).hintColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('My Classes',
+                    style: Theme.of(context).textTheme.titleLarge),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ClassStudentsPage(
-                              courseId: cls['course_id'],
-                              courseName: cls['course_name'],
-                            ),
-                          ),
+                              builder: (_) =>
+                                  const ProfessorAppointmentsPage()),
                         );
                       },
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Confirm Delete'),
-                              content: const Text(
-                                  'Are you sure you want to delete this class?'),
-                              actions: [
-                                TextButton(
-                                  child: const Text('Cancel'),
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red),
-                                  child: const Text('Delete'),
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirmed == true) {
-                            try {
-                              await ApiService.deleteClass(cls['course_id']);
-                              setState(() {
-                                createdClasses.removeAt(index);
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Class deleted successfully')),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text('Failed to delete class: $e')),
-                              );
-                            }
-                          }
-                        },
-                      ),
+                      icon: const Icon(Icons.calendar_today_rounded,
+                          color: Colors.green),
+                      label: const Text("My Appointments",
+                          style: TextStyle(color: Colors.green)),
                     ),
-                  );
-                },
-              ),
+                    IconButton(
+                      icon: const Icon(Icons.add, size: 26),
+                      onPressed: () => _createClassDialog(context),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 28),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search Classes',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12))),
+              ),
+              onChanged: (value) {
+                searchQuery = value;
+                _applyFilter();
+              },
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: filteredClasses.length,
+              itemBuilder: (context, index) {
+                final cls = filteredClasses[index];
+                final iconPath = _getCourseIcon(cls['course_name']);
+                return Card(
+                  child: ListTile(
+                    leading:
+                        CircleAvatar(backgroundImage: AssetImage(iconPath)),
+                    title: Text(cls['course_name'],
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Instructor: ${cls['professor_name']}"),
+                        if (professorEmail != null &&
+                            cls['professor_email'] == professorEmail)
+                          Text(
+                            "Class Code: ${cls['course_id']}",
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey[600]),
+                          ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ClassStudentsPage(
+                            courseId: cls['course_id'],
+                            courseName: cls['course_name'],
+                          ),
+                        ),
+                      );
+                    },
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteClass(index, cls),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

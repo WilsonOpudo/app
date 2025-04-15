@@ -4,13 +4,14 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:meetme/app_navigation.dart';
 import 'package:meetme/state/profile_status.dart';
 
+import 'api_service.dart';
 import 'main.dart';
 import 'screens/prof_page1.dart';
 import 'screens/prof_page2.dart';
 import 'screens/prof_page3.dart';
 import 'screens/prof_page4.dart';
-import 'screens/profdetails.dart';
 import 'screens/professorWelcomePage.dart';
+import 'package:meetme/screens/professor_notifications.dart';
 
 class ProfessorHomePage extends StatefulWidget {
   const ProfessorHomePage({super.key});
@@ -49,18 +50,47 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        leading: IconButton(
-          icon:
-              Icon(Icons.person_rounded, color: Theme.of(context).shadowColor),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfDetailsPage()),
-            ).then((_) {
-              setState(() {
-                ProfileStatus.isProfileIncomplete = false;
-              });
-            });
+        leading: FutureBuilder<List<Map<String, dynamic>>>(
+          future: ApiService.getNotifications(),
+          builder: (context, snapshot) {
+            final notifications = snapshot.data ?? [];
+            final unreadCount =
+                notifications.where((n) => n['read'] == false).length;
+
+            return IconButton(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.notifications_none_rounded, size: 26),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount.toString(),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ProfessorNotificationsPage()),
+                );
+                setState(() {}); // 👈 Refresh badge on return
+              },
+            );
           },
         ),
         title: Text(
@@ -88,42 +118,14 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
       ),
       body: Column(
         children: [
-          if (ProfileStatus.isProfileIncomplete)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              /*child: Card(
-                color: Colors.amber[100],
-                child: ListTile(
-                  leading: Icon(Icons.info_outline_rounded,
-                      color: Colors.amber[800]),
-                  title: const Text("Complete your profile details"),
-                  trailing: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ProfDetailsPage()),
-                      ).then((_) {
-                        setState(() {
-                          ProfileStatus.isProfileIncomplete = false;
-                        });
-                      });
-                    },
-                    child: const Text("Edit"),
-                  ),
-                ),
-              ),*/
-            ),
+          if (ProfileStatus.isProfileIncomplete) const SizedBox(height: 0),
           Expanded(
             child: Stack(
               children: [
                 PageView(
                   controller: _controller,
                   onPageChanged: (index) {
-                    setState(() {
-                      _bottomNavIndex = index;
-                    });
+                    setState(() => _bottomNavIndex = index);
                   },
                   children: const [
                     ProfessorWelcomePage(),

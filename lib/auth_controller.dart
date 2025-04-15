@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-import 'student_pages.dart'; // Replace with your actual professor/student screens if needed
+import 'student_pages.dart';
 import 'professor_pages.dart';
 
 class AuthController {
-  static Future<void> handleSignUpOrLogin({
+  static Future<bool> handleSignUpOrLogin({
     required String email,
     required String username,
     required String password,
@@ -17,30 +17,48 @@ class AuthController {
       if (isSignUp) {
         // Validate role selection
         if (!isProfessor && !isStudent) {
-          _showError(context, "Please select a role before signing up.");
-          return;
+          _showSnackBar(context, "Please select a role before signing up.");
+          return false;
         }
-
-        // Get role string
-        final role = isProfessor ? "professor" : "student";
 
         // Validate fields
         if (email.isEmpty || username.isEmpty || password.isEmpty) {
-          _showError(context, "Please fill in all sign-up fields.");
-          return;
+          _showSnackBar(context, "Please fill in all sign-up fields.");
+          return false;
         }
 
-        await ApiService.createAccount(email, username, password, role);
+        if (!_isValidEmail(email)) {
+          _showSnackBar(context, "Please enter a valid email.");
+          return false;
+        }
+        if (username.length < 5 || username.length > 20) {
+          _showSnackBar(context, "Username must be 5–20 characters.");
+          return false;
+        }
+        if (!_isValidPassword(password)) {
+          _showSnackBar(context, "Password is incorrect (min 4 characters).");
+          return false;
+        }
 
-        // After sign-up, go to login screen (switch _isSignUp in your state)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Account created! Please sign in.")),
-        );
+        final role = isProfessor ? "professor" : "student";
+        await ApiService.createAccount(email, username, password, role);
+        _showSnackBar(context, "Account created! Please sign in.");
+        return true;
       } else {
-        // Validate fields
+        // Login flow
         if (email.isEmpty || password.isEmpty) {
-          _showError(context, "Please fill in all login fields.");
-          return;
+          _showSnackBar(context, "Please fill in all login fields.");
+          return false;
+        }
+
+        if (!_isValidEmail(email)) {
+          _showSnackBar(context, "Please enter a valid email.");
+          return false;
+        }
+
+        if (!_isValidPassword(password)) {
+          _showSnackBar(context, "Password is incorrect (min 4 characters).");
+          return false;
         }
 
         await ApiService.login(email, password);
@@ -56,31 +74,43 @@ class AuthController {
         } else if (role == "professor") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    const ProfessorHomePage()), // replace with ProfessorPage
+            MaterialPageRoute(builder: (context) => const ProfessorHomePage()),
           );
         } else {
-          _showError(context, "Unknown user role.");
+          _showSnackBar(context, "Unknown user role.");
+          return false;
         }
+
+        return true;
       }
     } catch (e) {
-      _showError(context, e.toString());
+      final message = e.toString().toLowerCase();
+      if (message.contains("user not found") || message.contains("not found")) {
+        _showSnackBar(context, "User not found.");
+      } else if (message.contains("invalid credentials")) {
+        _showSnackBar(context, "Incorrect email or password.");
+      } else {
+        _showSnackBar(context, "Error: ${e.toString()}");
+      }
+      return false;
     }
   }
 
-  static void _showError(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Error"),
+  static bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  static bool _isValidPassword(String password) {
+    return password.length >= 4;
+  }
+
+  static void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
         content: Text(message),
-        actions: [
-          TextButton(
-            child: const Text("OK"),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+        backgroundColor: const Color.fromARGB(255, 11, 11, 11),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

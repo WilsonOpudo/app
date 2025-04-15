@@ -17,6 +17,107 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
   bool isLoading = true;
   String searchQuery = '';
 
+  List<Map<String, dynamic>> _getTodayAppointments() {
+    final now = DateTime.now();
+    return filteredAppointments.where((a) {
+      final dt = DateTime.tryParse(a['appointment_date'] ?? '');
+      return dt != null &&
+          dt.year == now.year &&
+          dt.month == now.month &&
+          dt.day == now.day;
+    }).toList()
+      ..sort((a, b) => a['appointment_date'].compareTo(b['appointment_date']));
+  }
+
+  Widget _buildAppointmentCard(Map<String, dynamic> appt) {
+    final dateTime = DateTime.tryParse(appt['appointment_date']);
+    final formattedDate = dateTime != null
+        ? DateFormat.yMMMMd().add_jm().format(dateTime)
+        : 'Unknown Time';
+
+    return Card(
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: const Icon(Icons.event_note, color: Colors.teal),
+        title: Text(appt['course_name']),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("With: ${appt['student_name']}"),
+            Text("At: $formattedDate"),
+            FutureBuilder<String>(
+              future: ApiService.getAppointmentStatus(appt['id']),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+
+                final status = snapshot.data!;
+                Color color = Colors.grey;
+                String label = status;
+
+                if (status == 'completed') {
+                  label = "✅ Completed";
+                  color = Colors.green;
+                } else if (status == 'cancelled') {
+                  label = "❌ Cancelled";
+                  color = Colors.red;
+                } else if (status == 'rescheduled') {
+                  label = "🔁 Rescheduled";
+                  color = Colors.orange;
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(label,
+                      style:
+                          TextStyle(color: color, fontWeight: FontWeight.bold)),
+                );
+              },
+            ),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'Cancel') {
+              _cancelAppointment(appt['id']);
+            } else if (value == 'Reschedule') {
+              _rescheduleAppointment(appt);
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(
+              value: 'Cancel',
+              child: Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            PopupMenuItem(
+              value: 'Reschedule',
+              child: Text("Reschedule"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getUpcomingAppointments() {
+    final now = DateTime.now();
+    return filteredAppointments.where((a) {
+      final dt = DateTime.tryParse(a['appointment_date'] ?? '');
+      return dt != null &&
+          dt.isAfter(now) &&
+          !(dt.year == now.year && dt.month == now.month && dt.day == now.day);
+    }).toList()
+      ..sort((a, b) => a['appointment_date'].compareTo(b['appointment_date']));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -271,96 +372,37 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
                 Expanded(
                   child: filteredAppointments.isEmpty
                       ? const Center(child: Text("No appointments found."))
-                      : ListView.builder(
-                          itemCount: filteredAppointments.length,
+                      : ListView(
                           padding: const EdgeInsets.all(12),
-                          itemBuilder: (context, index) {
-                            final appt = filteredAppointments[index];
-                            final dateTime =
-                                DateTime.tryParse(appt['appointment_date']);
-                            final formattedDate = dateTime != null
-                                ? DateFormat.yMMMMd().add_jm().format(dateTime)
-                                : 'Unknown Time';
-
-                            return Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: ListTile(
-                                leading: const Icon(Icons.event_note,
-                                    color: Colors.teal),
-                                title: Text(appt['course_name']),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("With: ${appt['student_name']}"),
-                                    Text("At: $formattedDate"),
-                                    FutureBuilder<String>(
-                                      future: ApiService.getAppointmentStatus(
-                                          appt['id']),
-                                      builder: (context, snapshot) {
-                                        if (!snapshot.hasData)
-                                          return const SizedBox.shrink();
-
-                                        final status = snapshot.data!;
-                                        Color color = Colors.grey;
-                                        String label = status;
-
-                                        if (status == 'completed') {
-                                          label = "✅ Completed";
-                                          color = Colors.green;
-                                        } else if (status == 'cancelled') {
-                                          label = "❌ Cancelled";
-                                          color = Colors.red;
-                                        } else if (status == 'rescheduled') {
-                                          label = "🔁 Rescheduled";
-                                          color = Colors.orange;
-                                        }
-
-                                        return Container(
-                                          margin: const EdgeInsets.only(top: 6),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: color.withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(label,
-                                              style: TextStyle(
-                                                  color: color,
-                                                  fontWeight: FontWeight.bold)),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                isThreeLine: true,
-                                trailing: PopupMenuButton<String>(
-                                  onSelected: (value) {
-                                    if (value == 'Cancel') {
-                                      _cancelAppointment(appt['id']);
-                                    } else if (value == 'Reschedule') {
-                                      _rescheduleAppointment(appt);
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'Cancel',
-                                      child: Text("Cancel",
-                                          style: TextStyle(color: Colors.red)),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'Reschedule',
-                                      child: Text("Reschedule"),
-                                    ),
-                                  ],
-                                ),
+                          children: [
+                            if (_getTodayAppointments().isNotEmpty) ...[
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 6),
+                                child: Text("Today",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.teal)),
                               ),
-                            );
-                          },
+                              ..._getTodayAppointments()
+                                  .map(_buildAppointmentCard),
+                              const SizedBox(height: 20),
+                            ],
+                            if (_getUpcomingAppointments().isNotEmpty) ...[
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 6),
+                                child: Text("Upcoming",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange)),
+                              ),
+                              ..._getUpcomingAppointments()
+                                  .map(_buildAppointmentCard),
+                            ],
+                          ],
                         ),
-                ),
+                )
               ],
             ),
     );
