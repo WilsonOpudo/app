@@ -57,9 +57,9 @@ class _ProfessorPage4State extends State<ProfessorPage4> {
                   "🟢 Student added: ${student['username']} (${student['email']})");
             }
           }
-        } catch (e) {
-          print("❌ Failed to fetch students for course $courseId: $e");
-          continue; // skip this course and move on
+        } catch (_) {
+          // Don't throw or show this in UI – just continue
+          continue;
         }
       }
 
@@ -67,12 +67,9 @@ class _ProfessorPage4State extends State<ProfessorPage4> {
         students = fetchedStudents;
         isLoading = false;
       });
-    } catch (e) {
-      print("❌ Error loading students: $e");
+    } catch (_) {
+      // General error catch – don’t show anything to the user
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to load students: $e")),
-      );
     }
   }
 

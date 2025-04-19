@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:meetme/api_service.dart';
 import 'package:meetme/app_navigation.dart';
-import 'professorappointments.dart';
 import 'package:meetme/screens/courseGroupPage.dart';
-import 'package:meetme/screens/classes.dart'; // Assumed ClassStudentsPage
 
 class ProfessorWelcomePage extends StatefulWidget {
   const ProfessorWelcomePage({super.key});
@@ -29,14 +26,6 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     'Other': 'assets/other.jpg',
   };
 
-  final Map<String, List<String>> categoryKeywords = {
-    'Mathematics': ['math', 'algebra', 'calculus', 'geometry'],
-    'Science': ['science', 'biology', 'physics', 'chemistry', 'computer'],
-    'English': ['english', 'literature', 'grammar'],
-    'History': ['history', 'geography', 'civics'],
-    'Art': ['art', 'drawing', 'painting', 'music'],
-  };
-
   @override
   void initState() {
     super.initState();
@@ -54,35 +43,29 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
           .where((cls) => cls['professor_email'] == professorEmail)
           .toList();
 
+      final now = DateTime.now();
       List<Map<String, dynamic>> enrichedClasses = [];
       List<Map<String, dynamic>> allAppointments = [];
 
-      for (final cls in filtered) {
-        // Safely get students
-        try {
-          final students =
-              await ApiService.getStudentsInClass(cls['course_id']);
-          cls['student_count'] = students.length;
-        } catch (e) {
-          print('⚠️ Failed to load students for ${cls['course_id']}: $e');
-          cls['student_count'] = 0;
-        }
+      final futures = filtered.map((cls) async {
+        final courseId = cls['course_id'];
 
-        // Safely get appointments
-        try {
-          final appts =
-              await ApiService.getProfessorAppointments(cls['course_id']);
+        final studentFuture = ApiService.getStudentsInClass(courseId)
+            .then((students) => cls['student_count'] = students.length)
+            .catchError((_) => cls['student_count'] = 0);
+
+        final apptFuture =
+            ApiService.getProfessorAppointments(courseId).then((appts) {
           if (appts is List) {
             allAppointments.addAll(appts);
           }
-        } catch (e) {
-          print('⚠️ Failed to load appointments for ${cls['course_id']}: $e');
-        }
+        }).catchError((_) {});
 
-        enrichedClasses.add(cls);
-      }
+        await Future.wait([studentFuture, apptFuture]);
+        return cls;
+      });
 
-      final now = DateTime.now();
+      enrichedClasses = await Future.wait(futures);
 
       todayAppointments = allAppointments.where((appt) {
         final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
@@ -97,45 +80,16 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
       upcomingAppointments = allAppointments.where((appt) {
         final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
         return apptDate != null &&
-            (apptDate.isAfter(now) &&
-                !(apptDate.year == now.year &&
-                    apptDate.month == now.month &&
-                    apptDate.day == now.day));
+            apptDate.isAfter(now) &&
+            !(apptDate.year == now.year &&
+                apptDate.month == now.month &&
+                apptDate.day == now.day);
       }).toList()
         ..sort((a, b) => DateTime.parse(a['appointment_date'])
             .compareTo(DateTime.parse(b['appointment_date'])));
 
       setState(() => createdClasses = enrichedClasses);
     }
-  }
-
-  String _categorize(String name) {
-    final lower = name.toLowerCase();
-    for (final entry in categoryKeywords.entries) {
-      for (final keyword in entry.value) {
-        if (lower.contains(keyword)) return entry.key;
-      }
-    }
-    return 'Other';
-  }
-
-  Map<String, List<Map<String, dynamic>>> _groupByCategory() {
-    final grouped = {
-      for (final cat in courseImages.keys) cat: <Map<String, dynamic>>[]
-    };
-    for (final cls in createdClasses) {
-      final category = _categorize(cls['course_name']);
-      grouped[category]?.add(cls);
-    }
-    return grouped;
-  }
-
-  String _getCourseImage(String courseName) {
-    final lower = courseName.toLowerCase();
-    for (final entry in courseImages.entries) {
-      if (lower.contains(entry.key.toLowerCase())) return entry.value;
-    }
-    return courseImages['Other']!;
   }
 
   String _getGreeting() {
@@ -149,6 +103,8 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   Widget build(BuildContext context) {
     final greeting = _getGreeting();
     final grouped = _groupByCategory();
+    final visibleCategories =
+        grouped.entries.where((entry) => entry.value.isNotEmpty).toList();
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -180,15 +136,11 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // 🔹 Today's Appointments
             _buildSectionTitle("Today's Appointments"),
             _buildAppointmentsList(todayAppointments),
-
             const SizedBox(height: 24),
             _buildSectionTitle("Upcoming Appointments"),
             _buildAppointmentsList(upcomingAppointments),
-
             const SizedBox(height: 24),
             _buildSectionTitle("Your Course Categories"),
             const SizedBox(height: 8),
@@ -197,53 +149,75 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 12),
+            RepaintBoundary(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: visibleCategories.length,
+                separatorBuilder: (_, __) => const Divider(height: 0),
+                itemBuilder: (context, index) {
+                  final entry = visibleCategories[index];
+                  final category = entry.key;
+                  final classList = entry.value;
 
-            // 🔹 Compact Swipeable Grid using Wrap
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: courseImages.keys.length,
-              itemBuilder: (context, index) {
-                final category = courseImages.keys.elementAt(index);
-                final classList = grouped[category] ?? [];
-
-                return ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      courseImages[category]!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  title: Text(
-                    category,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                      "${classList.length} class${classList.length == 1 ? '' : 'es'}"),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CourseGroupPage(
-                          courseName: category,
-                          matchingClasses: classList,
-                        ),
+                  return ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        courseImages[category] ?? courseImages['Other']!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        cacheWidth: 80,
+                        cacheHeight: 80,
+                        gaplessPlayback: true,
                       ),
-                    );
-                  },
-                );
-              },
+                    ),
+                    title: Text(
+                      category,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                        "${classList.length} class${classList.length == 1 ? '' : 'es'}"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CourseGroupPage(
+                            courseName: category,
+                            matchingClasses: classList,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Map<String, List<Map<String, dynamic>>> _groupByCategory() {
+    final grouped = {
+      for (final cat in courseImages.keys) cat: <Map<String, dynamic>>[]
+    };
+    for (final cls in createdClasses) {
+      final category = courseImages.keys.firstWhere(
+        (key) => cls['course_name']
+            .toString()
+            .toLowerCase()
+            .contains(key.toLowerCase()),
+        orElse: () => 'Other',
+      );
+      grouped[category]?.add(cls);
+    }
+    return grouped;
   }
 
   Widget _buildAppointmentsList(List<Map<String, dynamic>> appointments) {
@@ -255,10 +229,10 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     return Column(
       children: appointments.map((appt) {
         final dt = DateTime.tryParse(appt['appointment_date'] ?? '');
-        if (dt == null) return const SizedBox(); // Skip if invalid date
+        if (dt == null) return const SizedBox();
 
-        final date = DateFormat.yMMMd().format(dt);
-        final time = DateFormat.jm().format(dt);
+        final date = dt.toLocal().toIso8601String().split('T').first;
+        final time = TimeOfDay.fromDateTime(dt).format(context);
         return ListTile(
           leading: const Icon(Icons.event_note, color: Colors.indigo),
           title: Text(

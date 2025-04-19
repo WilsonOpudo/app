@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -24,9 +25,20 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
   final PageController _controller = PageController();
   int _bottomNavIndex = 0;
 
+  late Future<List<Map<String, dynamic>>> _notificationsFuture;
+  Timer? _badgeTimer;
+
   @override
   void initState() {
     super.initState();
+    _notificationsFuture = ApiService.getNotifications();
+
+    _badgeTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      setState(() {
+        _notificationsFuture = ApiService.getNotifications();
+      });
+    });
+
     AppNavigation.jumpToPage = (index) {
       _controller.animateToPage(
         index,
@@ -39,6 +51,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
 
   @override
   void dispose() {
+    _badgeTimer?.cancel();
     AppNavigation.jumpToPage = null;
     _controller.dispose();
     super.dispose();
@@ -51,7 +64,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: FutureBuilder<List<Map<String, dynamic>>>(
-          future: ApiService.getNotifications(),
+          future: _notificationsFuture,
           builder: (context, snapshot) {
             final notifications = snapshot.data ?? [];
             final unreadCount =
@@ -82,13 +95,17 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
                     ),
                 ],
               ),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const ProfessorNotificationsPage()),
+                    builder: (_) => const ProfessorNotificationsPage(),
+                  ),
                 );
-                setState(() {}); // 👈 Refresh badge on return
+
+                setState(() {
+                  _notificationsFuture = ApiService.getNotifications();
+                });
               },
             );
           },

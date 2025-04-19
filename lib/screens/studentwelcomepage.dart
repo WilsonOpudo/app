@@ -167,63 +167,78 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
             const Text("Enrolled Classes",
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: joinedClasses.length,
-              itemBuilder: (context, index) {
-                final cls = joinedClasses[index];
-                final imagePath = _getCourseImage(cls['course_name']);
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: AssetImage(imagePath),
-                    ),
-                    title: Text(
-                      cls['course_name'],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    subtitle: Text(
-                      "Instructor: ${cls['professor_name']}",
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProfessorClassDetailsPage(
-                            courseId: cls['course_id'],
-                            onNavigateToAppointments: () {
-                              Navigator.pop(context);
-                              Future.delayed(const Duration(milliseconds: 100),
-                                  () async {
-                                int retries = 0;
-                                while (StudentNavigation.jumpToPage == null &&
-                                    retries < 10) {
-                                  await Future.delayed(
-                                      const Duration(milliseconds: 100));
-                                  retries++;
-                                }
-                                if (StudentNavigation.jumpToPage != null) {
-                                  StudentNavigation.jumpToPage!(2);
-                                } else {
-                                  debugPrint(
-                                      "❌ Navigation to appointments failed (still null)");
-                                }
-                              });
-                            },
-                          ),
+            RepaintBoundary(
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: joinedClasses.length,
+                itemBuilder: (context, index) {
+                  final cls = joinedClasses[index];
+                  final imagePath = _getCourseImage(cls['course_name']);
+
+                  return Card(
+                    elevation: 1.5,
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: ListTile(
+                      leading: ClipOval(
+                        child: Image.asset(
+                          imagePath,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          cacheWidth: 80, // Reduces memory usage
+                          cacheHeight: 80,
                         ),
-                      );
-                    },
-                  ),
-                );
-              },
+                      ),
+                      title: Text(
+                        cls['course_name'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "Instructor: ${cls['professor_name']}",
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfessorClassDetailsPage(
+                              courseId: cls['course_id'],
+                              onNavigateToAppointments: () {
+                                Navigator.pop(context);
+                                Future.delayed(
+                                    const Duration(milliseconds: 100),
+                                    () async {
+                                  int retries = 0;
+                                  while (StudentNavigation.jumpToPage == null &&
+                                      retries < 10) {
+                                    await Future.delayed(
+                                        const Duration(milliseconds: 100));
+                                    retries++;
+                                  }
+                                  if (StudentNavigation.jumpToPage != null) {
+                                    StudentNavigation.jumpToPage!(2);
+                                  } else {
+                                    debugPrint(
+                                        "❌ Navigation to appointments failed (still null)");
+                                  }
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
 
             const SizedBox(height: 24),
-            const Text("Reminders & Notifications",
+            const Text("Reminders",
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _reminderTile(

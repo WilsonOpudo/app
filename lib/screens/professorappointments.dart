@@ -47,40 +47,6 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
           children: [
             Text("With: ${appt['student_name']}"),
             Text("At: $formattedDate"),
-            FutureBuilder<String>(
-              future: ApiService.getAppointmentStatus(appt['id']),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const SizedBox.shrink();
-
-                final status = snapshot.data!;
-                Color color = Colors.grey;
-                String label = status;
-
-                if (status == 'completed') {
-                  label = "✅ Completed";
-                  color = Colors.green;
-                } else if (status == 'cancelled') {
-                  label = "❌ Cancelled";
-                  color = Colors.red;
-                } else if (status == 'rescheduled') {
-                  label = "🔁 Rescheduled";
-                  color = Colors.orange;
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(top: 6),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(label,
-                      style:
-                          TextStyle(color: color, fontWeight: FontWeight.bold)),
-                );
-              },
-            ),
           ],
         ),
         isThreeLine: true,

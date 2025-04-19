@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -9,7 +10,7 @@ import 'screens/stu_page1.dart';
 import 'screens/stu_page2.dart';
 import 'screens/stu_page3.dart';
 import 'screens/stu_page4.dart';
-import 'screens/student_notifications.dart'; // ← Add this screen
+import 'screens/student_notifications.dart';
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key});
@@ -21,10 +22,20 @@ class StudentHomePage extends StatefulWidget {
 class _StudentHomePageState extends State<StudentHomePage> {
   final PageController _controller = PageController();
   int _bottomNavIndex = 0;
+  late Future<List<Map<String, dynamic>>> _notificationsFuture;
+  Timer? _badgeTimer;
 
   @override
   void initState() {
     super.initState();
+    _notificationsFuture = ApiService.getNotifications();
+
+    _badgeTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      setState(() {
+        _notificationsFuture = ApiService.getNotifications();
+      });
+    });
+
     StudentNavigation.jumpToPage = (index) {
       _controller.animateToPage(
         index,
@@ -37,6 +48,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   @override
   void dispose() {
+    _badgeTimer?.cancel();
     StudentNavigation.jumpToPage = null;
     _controller.dispose();
     super.dispose();
@@ -49,7 +61,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         centerTitle: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: FutureBuilder<List<Map<String, dynamic>>>(
-          future: ApiService.getNotifications(),
+          future: _notificationsFuture,
           builder: (context, snapshot) {
             final notifications = snapshot.data ?? [];
             final unreadCount =
@@ -82,14 +94,16 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 ],
               ),
               color: Theme.of(context).shadowColor,
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const StudentNotificationsPage(),
                   ),
                 );
-                setState(() {}); // 👈 re-triggers unread count when user return
+                setState(() {
+                  _notificationsFuture = ApiService.getNotifications();
+                });
               },
             );
           },

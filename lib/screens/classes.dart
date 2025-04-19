@@ -48,11 +48,9 @@ class _ClassStudentsPageState extends State<ClassStudentsPage> {
         students = enriched;
         isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
+      // Silently fail without showing raw exception
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load students: $e')),
-      );
     }
   }
 

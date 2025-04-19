@@ -22,21 +22,31 @@ class _StudentPage4State extends State<StudentPage4> {
   Future<void> _loadProfessors() async {
     final userInfo = await ApiService.getUserInfo();
     studentEmail = userInfo['email'];
+
     final enrolledClasses = await ApiService.getEnrolledClasses(studentEmail!);
 
     Set<String> addedEmails = {};
+    List<Map<String, dynamic>> loadedProfessors = [];
 
     for (var cls in enrolledClasses) {
-      final email =
-          await ApiService.getProfessorEmailFromCourse(cls['course_id']);
-      if (!addedEmails.contains(email)) {
-        addedEmails.add(email);
-        final user = await ApiService.getUserByEmail(email);
-        professors.add(user);
+      try {
+        final email =
+            await ApiService.getProfessorEmailFromCourse(cls['course_id']);
+
+        if (addedEmails.add(email)) {
+          // add() returns false if already present
+          final user = await ApiService.getUserByEmail(email);
+          loadedProfessors.add(user);
+        }
+      } catch (_) {
+        // Skip silently if email or user lookup fails
+        continue;
       }
     }
 
-    setState(() {});
+    setState(() {
+      professors = loadedProfessors;
+    });
   }
 
   @override
@@ -55,7 +65,16 @@ class _StudentPage4State extends State<StudentPage4> {
         iconTheme: IconThemeData(color: Theme.of(context).shadowColor),
       ),
       body: professors.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: Text(
+                "Not enrolled in any class yet.",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               itemCount: professors.length,

@@ -65,7 +65,8 @@ class _StudentPage1State extends State<StudentPage1> {
         title: const Text("Join a Class"),
         content: TextField(
           controller: codeController,
-          decoration: const InputDecoration(hintText: "Enter Class Code"),
+          decoration: const InputDecoration(
+              hintText: "Enter Class Code to Join Your Class"),
         ),
         actions: [
           TextButton(

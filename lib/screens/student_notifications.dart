@@ -23,21 +23,27 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
 
   Future<void> _loadNotifications() async {
     setState(() => isLoading = true);
-    final info = await ApiService.getUserInfo();
-    studentEmail = info['email'];
 
-    if (studentEmail != null) {
-      final fetched = await ApiService.getNotifications();
-      setState(() {
-        notifications = fetched;
-        isLoading = false;
-      });
+    try {
+      final info = await ApiService.getUserInfo();
+      studentEmail = info['email'];
+
+      if (studentEmail != null) {
+        final fetched = await ApiService.getNotifications();
+        setState(() {
+          notifications = fetched;
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      setState(() => isLoading = false);
+      // Optionally show error feedback here
     }
   }
 
   Future<void> _markAsRead(String id) async {
     await ApiService.markNotificationAsRead(id);
-    await _loadNotifications();
+    await _loadNotifications(); // Refresh after marking
   }
 
   @override
@@ -52,8 +58,14 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : notifications.isEmpty
-                ? const Center(child: Text("No notifications yet."))
+                ? const Center(
+                    child: Text(
+                      "No notifications yet.",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  )
                 : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: notifications.length,
                     itemBuilder: (context, index) {
                       final n = notifications[index];
@@ -61,13 +73,20 @@ class _StudentNotificationsPageState extends State<StudentNotificationsPage> {
                       final formatted = dt != null
                           ? DateFormat.yMMMd().add_jm().format(dt)
                           : '';
+
                       return ListTile(
-                        title: Text(n['title'] ?? '',
-                            style: TextStyle(
-                                fontWeight: n['read'] == true
-                                    ? FontWeight.normal
-                                    : FontWeight.bold)),
-                        subtitle: Text("${n['message'] ?? ''}\n$formatted"),
+                        title: Text(
+                          n['title'] ?? '',
+                          style: TextStyle(
+                            fontWeight: n['read'] == true
+                                ? FontWeight.normal
+                                : FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          "${n['message'] ?? ''}\n$formatted",
+                          style: const TextStyle(height: 1.4),
+                        ),
                         isThreeLine: true,
                         trailing: n['read'] == true
                             ? null
