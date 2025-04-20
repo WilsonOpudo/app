@@ -183,8 +183,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
           tabs: const [
             GButton(icon: Icons.home_filled, text: 'Welcome'),
             GButton(icon: Icons.class_, text: 'Classes'),
-            GButton(
-                icon: Icons.dashboard_customize_rounded, text: 'Appointments'),
+            GButton(icon: Icons.dashboard_customize_rounded, text: 'Book'),
             GButton(icon: Icons.storage_rounded, text: 'Calendar'),
             GButton(icon: Icons.message_rounded, text: 'Chat'),
           ],
