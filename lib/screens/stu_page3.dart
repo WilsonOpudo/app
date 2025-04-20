@@ -22,6 +22,12 @@ class _StudentPage3State extends State<StudentPage3> {
   @override
   void initState() {
     super.initState();
+    _calendarController.displayDate = _selectedDate;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _datePickerController.animateToDate(_selectedDate);
+    });
+
     _fetchAppointments();
   }
 
@@ -79,12 +85,12 @@ class _StudentPage3State extends State<StudentPage3> {
                 width: 60,
                 selectionColor: Theme.of(context).primaryColor,
                 selectedTextColor: Colors.white,
-                daysCount: 14,
+                daysCount: 7,
                 onDateChange: (date) {
-                  setState(() {
-                    _selectedDate = date;
+                  if (!isSameDay(_selectedDate, date)) {
+                    setState(() => _selectedDate = date);
                     _calendarController.displayDate = date;
-                  });
+                  }
                 },
               ),
             ),
@@ -143,6 +149,15 @@ class _StudentPage3State extends State<StudentPage3> {
                       fontFamily: 'Poppins',
                     ),
                   ),
+                  onViewChanged: (ViewChangedDetails details) {
+                    if (details.visibleDates.isNotEmpty) {
+                      final newDate = details.visibleDates.first;
+                      if (!isSameDay(newDate, _selectedDate)) {
+                        setState(() => _selectedDate = newDate);
+                        _datePickerController.animateToDate(newDate);
+                      }
+                    }
+                  },
                 ),
               ),
             ),
@@ -150,6 +165,10 @@ class _StudentPage3State extends State<StudentPage3> {
         ),
       ),
     );
+  }
+
+  bool isSameDay(DateTime d1, DateTime d2) {
+    return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
 
   Color _colorFromCourse(String? courseName) {

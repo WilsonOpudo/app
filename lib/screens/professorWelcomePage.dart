@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meetme/api_service.dart';
 import 'package:meetme/app_navigation.dart';
 import 'package:meetme/screens/courseGroupPage.dart';
+import 'professorappointments.dart';
 
 class ProfessorWelcomePage extends StatefulWidget {
   const ProfessorWelcomePage({super.key});
@@ -136,7 +137,13 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
               ],
             ),
             const SizedBox(height: 20),
-            _buildSectionTitle("Today's Appointments"),
+            _buildSectionTitle("Today's Appointments", onViewAll: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const ProfessorAppointmentsPage()),
+              );
+            }),
             _buildAppointmentsList(todayAppointments),
             const SizedBox(height: 24),
             _buildSectionTitle("Upcoming Appointments"),
@@ -243,8 +250,21 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) => Text(title,
-      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16));
+  Widget _buildSectionTitle(String title, {VoidCallback? onViewAll}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        if (onViewAll != null)
+          TextButton.icon(
+            onPressed: onViewAll,
+            icon: const Icon(Icons.list_alt, size: 16),
+            label: const Text("View All"),
+          ),
+      ],
+    );
+  }
 
   Widget _quickAction({
     required IconData icon,

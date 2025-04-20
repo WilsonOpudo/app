@@ -236,14 +236,6 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                 },
               ),
             ),
-
-            const SizedBox(height: 24),
-            const Text("Reminders",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            _reminderTile(
-                "📌 Don’t forget to check your professor’s office hours."),
-            _reminderTile("🕒 Appointments are limited — book early!"),
           ],
         ),
       ),

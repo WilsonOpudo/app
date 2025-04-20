@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:meetme/api_service.dart'; // make sure this provides appointment data
+import 'package:meetme/api_service.dart';
 
 class ProfessorPage3 extends StatefulWidget {
   const ProfessorPage3({super.key});
@@ -19,7 +19,18 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
   @override
   void initState() {
     super.initState();
+    _calendarController.displayDate = _selectedDate;
+
+    // 🔥 Fix the crash on animateToDate
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _datePickerController.animateToDate(_selectedDate);
+    });
+
     _fetchAppointmentsForDate(_selectedDate);
+  }
+
+  bool isSameDay(DateTime d1, DateTime d2) {
+    return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
   }
 
   Future<void> _fetchAppointmentsForDate(DateTime date) async {
@@ -83,11 +94,13 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                 locale: 'en_US',
                 daysCount: 7,
                 onDateChange: (date) {
-                  setState(() {
-                    _selectedDate = date;
-                    _calendarController.displayDate = _selectedDate;
+                  if (!isSameDay(_selectedDate, date)) {
+                    setState(() => _selectedDate = date);
+                    _calendarController.displayDate = date;
+                    _calendarController.selectedDate =
+                        date; // ✅ sync selected date too
                     _fetchAppointmentsForDate(date);
-                  });
+                  }
                 },
               ),
             ),
@@ -114,8 +127,11 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                   onViewChanged: (details) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       final newDate = details.visibleDates.first;
-                      _datePickerController.animateToDate(newDate);
-                      _fetchAppointmentsForDate(newDate);
+                      if (!isSameDay(_selectedDate, newDate)) {
+                        setState(() => _selectedDate = newDate);
+                        _datePickerController.animateToDate(newDate);
+                        _fetchAppointmentsForDate(newDate);
+                      }
                     });
                   },
                   appointmentBuilder: (context, details) {

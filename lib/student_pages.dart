@@ -175,7 +175,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             GButton(icon: Icons.home_filled, text: 'Welcome'),
             GButton(icon: Icons.class_, text: 'Classes'),
             GButton(icon: Icons.dashboard_customize_rounded, text: 'Book'),
-            GButton(icon: Icons.calendar_month, text: 'Calendar'),
+            GButton(icon: Icons.storage_rounded, text: 'Calendar'),
             GButton(icon: Icons.message_rounded, text: 'Chat'),
           ],
         ),
