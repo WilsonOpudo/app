@@ -17,6 +17,44 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
   String? professorEmail;
   String searchQuery = "";
 
+  final Map<String, String> courseImages = {
+    'Mathematics': 'assets/math.jpg',
+    'Science': 'assets/science.jpg',
+    'English': 'assets/english.jpg',
+    'History': 'assets/history.jpg',
+    'Art': 'assets/art.jpg',
+    'Other': 'assets/other.jpg',
+  };
+
+  String _matchCategory(String courseName) {
+    final name = courseName.toLowerCase();
+
+    if (name.contains('math') ||
+        name.contains('algebra') ||
+        name.contains('geometry')) {
+      return 'Mathematics';
+    } else if (name.contains('sci') ||
+        name.contains('bio') ||
+        name.contains('chem') ||
+        name.contains('physics')) {
+      return 'Science';
+    } else if (name.contains('english') ||
+        name.contains('lit') ||
+        name.contains('grammar')) {
+      return 'English';
+    } else if (name.contains('history') ||
+        name.contains('civics') ||
+        name.contains('gov')) {
+      return 'History';
+    } else if (name.contains('art') ||
+        name.contains('design') ||
+        name.contains('drawing')) {
+      return 'Art';
+    } else {
+      return 'Other';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,18 +92,15 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
   }
 
   String _getCourseIcon(String courseName) {
-    final name = courseName.toLowerCase();
-    if (name.contains('math')) return 'assets/math.jpg';
-    if (name.contains('science')) return 'assets/science.jpg';
-    if (name.contains('english')) return 'assets/english.jpg';
-    if (name.contains('history')) return 'assets/history.jpg';
-    if (name.contains('art')) return 'assets/art.jpg';
-    return 'assets/other.jpg';
+    final category = _matchCategory(courseName);
+    return courseImages[category] ?? courseImages['Other']!;
   }
 
   Future<void> _createClassDialog(BuildContext context) async {
     final classNameController = TextEditingController();
     final descriptionController = TextEditingController();
+
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return showDialog<void>(
       context: context,
@@ -78,7 +113,7 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
               TextField(
                   controller: classNameController,
                   decoration: const InputDecoration(labelText: 'Class Name')),
-              const SizedBox(height: 10),
+              SizedBox(height: screenWidth * 0.02),
               TextField(
                   controller: descriptionController,
                   maxLines: 3,
@@ -169,16 +204,22 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.03, vertical: screenWidth * 0.02),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('My Classes',
-                    style: Theme.of(context).textTheme.titleLarge),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontSize: screenWidth * 0.06)),
                 Row(
                   children: [
                     TextButton.icon(
@@ -190,13 +231,15 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                                   const ProfessorAppointmentsPage()),
                         );
                       },
-                      icon: const Icon(Icons.calendar_today_rounded,
-                          color: Colors.green),
-                      label: const Text("My Appointments",
-                          style: TextStyle(color: Colors.green)),
+                      icon: Icon(Icons.calendar_today_rounded,
+                          color: Colors.green, size: screenWidth * 0.06),
+                      label: Text("My Appointments",
+                          style: TextStyle(
+                              color: Colors.green,
+                              fontSize: screenWidth * 0.04)),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add, size: 26),
+                      icon: Icon(Icons.add, size: screenWidth * 0.07),
                       onPressed: () => _createClassDialog(context),
                     ),
                   ],
@@ -205,14 +248,18 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
+            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
             child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search Classes',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12))),
-              ),
+              decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).canvasColor,
+                  hintText: 'Search Classes',
+                  prefixIcon: Icon(Icons.search,
+                      color: Colors.teal, size: screenWidth * 0.065),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  )),
               onChanged: (value) {
                 searchQuery = value;
                 _applyFilter();
@@ -221,27 +268,32 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
           ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(screenWidth * 0.03),
               itemCount: filteredClasses.length,
               itemBuilder: (context, index) {
                 final cls = filteredClasses[index];
                 final iconPath = _getCourseIcon(cls['course_name']);
                 return Card(
                   child: ListTile(
-                    leading:
-                        CircleAvatar(backgroundImage: AssetImage(iconPath)),
+                    leading: CircleAvatar(
+                        backgroundImage: AssetImage(iconPath),
+                        radius: screenWidth * 0.07),
                     title: Text(cls['course_name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.045)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Instructor: ${cls['professor_name']}"),
+                        Text("Instructor: ${cls['professor_name']}",
+                            style: TextStyle(fontSize: screenWidth * 0.035)),
                         if (professorEmail != null &&
                             cls['professor_email'] == professorEmail)
                           Text(
                             "Class Code: ${cls['course_id']}",
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
+                                fontSize: screenWidth * 0.03,
+                                color: Colors.grey[600]),
                           ),
                       ],
                     ),
@@ -257,7 +309,8 @@ class _ProfessorPage1State extends State<ProfessorPage1> {
                       );
                     },
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      icon: Icon(Icons.delete,
+                          color: Colors.red, size: screenWidth * 0.06),
                       onPressed: () => _deleteClass(index, cls),
                     ),
                   ),

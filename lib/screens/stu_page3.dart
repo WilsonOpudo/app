@@ -69,6 +69,8 @@ class _StudentPage3State extends State<StudentPage3> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -76,13 +78,13 @@ class _StudentPage3State extends State<StudentPage3> {
           children: [
             const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
               child: DatePicker(
                 DateTime.now(),
                 controller: _datePickerController,
                 initialSelectedDate: _selectedDate,
-                height: 100,
-                width: 60,
+                height: screenWidth * 0.25,
+                width: screenWidth * 0.13,
                 selectionColor: Theme.of(context).primaryColor,
                 selectedTextColor: Colors.white,
                 daysCount: 7,
@@ -96,7 +98,7 @@ class _StudentPage3State extends State<StudentPage3> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(screenWidth * 0.02),
                 child: SfCalendar(
                   controller: _calendarController,
                   view: CalendarView.day,
@@ -116,8 +118,8 @@ class _StudentPage3State extends State<StudentPage3> {
                         child: Text(
                           appointment.subject,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontFamily: 'Poppins',
@@ -129,7 +131,7 @@ class _StudentPage3State extends State<StudentPage3> {
                   viewHeaderStyle: ViewHeaderStyle(
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     dateTextStyle: TextStyle(
-                      fontSize: 16,
+                      fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Poppins',
                       color: Theme.of(context).shadowColor,
@@ -140,10 +142,10 @@ class _StudentPage3State extends State<StudentPage3> {
                     startHour: 8,
                     endHour: 20,
                     timeInterval: const Duration(minutes: 30),
-                    timeIntervalHeight: 60,
+                    timeIntervalHeight: screenWidth * 0.15,
                     timeFormat: 'h:mm a',
                     timeTextStyle: TextStyle(
-                      fontSize: 10,
+                      fontSize: screenWidth * 0.03,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).shadowColor,
                       fontFamily: 'Poppins',
@@ -178,7 +180,7 @@ class _StudentPage3State extends State<StudentPage3> {
     if (name.contains('english')) return Colors.orange;
     if (name.contains('lab')) return Colors.red;
     if (name.contains('history')) return Colors.brown;
-    return Colors.teal; // fallback color
+    return Colors.teal;
   }
 }
 

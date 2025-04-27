@@ -49,24 +49,39 @@ class _ClassStudentsPageState extends State<ClassStudentsPage> {
         isLoading = false;
       });
     } catch (_) {
-      // Silently fail without showing raw exception
       setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.courseName),
+        title: Text(
+          widget.courseName,
+          style: TextStyle(
+            fontSize: screenWidth * 0.05,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : students.isEmpty
-              ? const Center(child: Text('No students have joined this class.'))
+              ? Center(
+                  child: Text(
+                    'No students have joined this class.',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
               : ListView.builder(
                   itemCount: students.length,
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   itemBuilder: (context, index) {
                     final student = students[index];
                     final email = student['email'] ?? 'No email';
@@ -74,18 +89,30 @@ class _ClassStudentsPageState extends State<ClassStudentsPage> {
 
                     return Card(
                       elevation: 2,
+                      margin: EdgeInsets.only(bottom: screenWidth * 0.04),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Theme.of(context).primaryColor,
-                          child: const Icon(Icons.person, color: Colors.white),
+                          radius: screenWidth * 0.06,
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: screenWidth * 0.06,
+                          ),
                         ),
                         title: Text(
                           username,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
+                            fontSize: screenWidth * 0.045,
                           ),
                         ),
-                        subtitle: Text(email),
+                        subtitle: Text(
+                          email,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
                       ),
                     );
                   },

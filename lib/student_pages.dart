@@ -11,6 +11,7 @@ import 'screens/stu_page2.dart';
 import 'screens/stu_page3.dart';
 import 'screens/stu_page4.dart';
 import 'screens/student_notifications.dart';
+import 'main.dart';
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key});
@@ -56,6 +57,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -70,7 +74,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             return IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.notifications_none_rounded, size: 26),
+                  Icon(Icons.notifications_rounded, size: screenWidth * 0.07),
                   if (unreadCount > 0)
                     Positioned(
                       right: 0,
@@ -83,8 +87,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
                         ),
                         child: Text(
                           unreadCount.toString(),
-                          style: const TextStyle(
-                            fontSize: 10,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.025,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -112,7 +116,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
           'Meet Me',
           style: TextStyle(
             color: Theme.of(context).shadowColor,
-            fontSize: 24,
+            fontSize: screenWidth * 0.06,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
           ),
@@ -120,7 +124,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.logout_rounded,
-                color: Theme.of(context).shadowColor),
+                color: Theme.of(context).shadowColor, size: screenWidth * 0.07),
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
@@ -147,13 +151,13 @@ class _StudentHomePageState extends State<StudentHomePage> {
             ],
           ),
           Align(
-            alignment: const Alignment(0, 0.97),
+            alignment: Alignment(0, screenHeight < 600 ? 0.95 : 0.97),
             child: SmoothPageIndicator(
               controller: _controller,
               count: 5,
               effect: WormEffect(
-                dotHeight: 10,
-                dotWidth: 10,
+                dotHeight: screenWidth * 0.025,
+                dotWidth: screenWidth * 0.025,
                 activeDotColor: Theme.of(context).shadowColor,
                 dotColor: Theme.of(context).hintColor,
               ),
@@ -162,21 +166,46 @@ class _StudentHomePageState extends State<StudentHomePage> {
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: GNav(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          gap: 8,
-          padding: const EdgeInsets.all(16),
+          gap: screenWidth * 0.02,
+          padding: EdgeInsets.all(screenWidth * 0.04),
           selectedIndex: _bottomNavIndex,
           onTabChange: (index) {
             StudentNavigation.jumpToPage?.call(index);
           },
-          tabs: const [
-            GButton(icon: Icons.home_filled, text: 'Welcome'),
-            GButton(icon: Icons.class_, text: 'Classes'),
-            GButton(icon: Icons.dashboard_customize_rounded, text: 'Book'),
-            GButton(icon: Icons.storage_rounded, text: 'Calendar'),
-            GButton(icon: Icons.message_rounded, text: 'Chat'),
+          tabs: [
+            GButton(
+              icon: Icons.home_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.amp_stories_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.dashboard_customize_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.bento_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.add_comment,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
           ],
         ),
       ),

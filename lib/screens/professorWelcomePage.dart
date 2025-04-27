@@ -27,6 +27,35 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     'Other': 'assets/other.jpg',
   };
 
+  String _matchCategory(String courseName) {
+    final name = courseName.toLowerCase();
+
+    if (name.contains('math') ||
+        name.contains('algebra') ||
+        name.contains('geometry')) {
+      return 'Mathematics';
+    } else if (name.contains('sci') ||
+        name.contains('bio') ||
+        name.contains('chem') ||
+        name.contains('physics')) {
+      return 'Science';
+    } else if (name.contains('english') ||
+        name.contains('grammar') ||
+        name.contains('lit')) {
+      return 'English';
+    } else if (name.contains('history') ||
+        name.contains('gov') ||
+        name.contains('civics')) {
+      return 'History';
+    } else if (name.contains('art') ||
+        name.contains('drawing') ||
+        name.contains('design')) {
+      return 'Art';
+    } else {
+      return 'Other';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -102,6 +131,7 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final greeting = _getGreeting();
     final grouped = _groupByCategory();
     final visibleCategories =
@@ -109,13 +139,13 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
 
     return Scaffold(
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("$greeting, ${username ?? 'Professor'}!",
                 style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
+            SizedBox(height: screenWidth * 0.04),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -136,7 +166,7 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenWidth * 0.05),
             _buildSectionTitle("Today's Appointments", onViewAll: () {
               Navigator.push(
                 context,
@@ -145,37 +175,40 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
               );
             }),
             _buildAppointmentsList(todayAppointments),
-            const SizedBox(height: 24),
+            SizedBox(height: screenWidth * 0.06),
             _buildSectionTitle("Upcoming Appointments"),
             _buildAppointmentsList(upcomingAppointments),
-            const SizedBox(height: 24),
+            SizedBox(height: screenWidth * 0.06),
             _buildSectionTitle("Your Course Categories"),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: screenWidth * 0.02),
+            Text(
               "Explore and manage your classes by tapping on them below.",
-              style: TextStyle(color: Colors.black54),
+              style: TextStyle(
+                  color: Colors.black54, fontSize: screenWidth * 0.035),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: screenWidth * 0.03),
             RepaintBoundary(
               child: ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: visibleCategories.length,
-                separatorBuilder: (_, __) => const Divider(height: 0),
+                separatorBuilder: (_, __) =>
+                    Divider(height: screenWidth * 0.02),
                 itemBuilder: (context, index) {
                   final entry = visibleCategories[index];
                   final category = entry.key;
                   final classList = entry.value;
 
                   return ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                        vertical: screenWidth * 0.02,
+                        horizontal: screenWidth * 0.03),
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.asset(
                         courseImages[category] ?? courseImages['Other']!,
-                        width: 40,
-                        height: 40,
+                        width: screenWidth * 0.1,
+                        height: screenWidth * 0.1,
                         fit: BoxFit.cover,
                         cacheWidth: 80,
                         cacheHeight: 80,
@@ -184,11 +217,16 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
                     ),
                     title: Text(
                       category,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.045,
+                      ),
                     ),
                     subtitle: Text(
-                        "${classList.length} class${classList.length == 1 ? '' : 'es'}"),
-                    trailing: const Icon(Icons.chevron_right),
+                        "${classList.length} class${classList.length == 1 ? '' : 'es'}",
+                        style: TextStyle(fontSize: screenWidth * 0.035)),
+                    trailing:
+                        Icon(Icons.chevron_right, size: screenWidth * 0.06),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -214,23 +252,26 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     final grouped = {
       for (final cat in courseImages.keys) cat: <Map<String, dynamic>>[]
     };
+
     for (final cls in createdClasses) {
-      final category = courseImages.keys.firstWhere(
-        (key) => cls['course_name']
-            .toString()
-            .toLowerCase()
-            .contains(key.toLowerCase()),
-        orElse: () => 'Other',
-      );
+      final name = cls['course_name']?.toString() ?? '';
+      final category = _matchCategory(name);
       grouped[category]?.add(cls);
     }
+
     return grouped;
   }
 
   Widget _buildAppointmentsList(List<Map<String, dynamic>> appointments) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     if (appointments.isEmpty) {
-      return const Text("No upcoming appointments.",
-          style: TextStyle(color: Colors.grey));
+      return Padding(
+        padding: EdgeInsets.only(top: screenWidth * 0.02),
+        child: Text("No upcoming appointments.",
+            style:
+                TextStyle(color: Colors.grey, fontSize: screenWidth * 0.035)),
+      );
     }
 
     return Column(
@@ -241,26 +282,33 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
         final date = dt.toLocal().toIso8601String().split('T').first;
         final time = TimeOfDay.fromDateTime(dt).format(context);
         return ListTile(
-          leading: const Icon(Icons.event_note, color: Colors.indigo),
+          leading: Icon(Icons.event_note,
+              color: Colors.indigo, size: screenWidth * 0.06),
           title: Text(
-              "${appt['student_name'] ?? 'Unknown'} - ${appt['course_name'] ?? 'Unknown'}"),
-          subtitle: Text("$date • $time"),
+              "${appt['student_name'] ?? 'Unknown'} - ${appt['course_name'] ?? 'Unknown'}",
+              style: TextStyle(fontSize: screenWidth * 0.04)),
+          subtitle: Text("$date • $time",
+              style: TextStyle(fontSize: screenWidth * 0.035)),
         );
       }).toList(),
     );
   }
 
   Widget _buildSectionTitle(String title, {VoidCallback? onViewAll}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: screenWidth * 0.045)),
         if (onViewAll != null)
           TextButton.icon(
             onPressed: onViewAll,
-            icon: const Icon(Icons.list_alt, size: 16),
-            label: const Text("View All"),
+            icon: Icon(Icons.list_alt, size: screenWidth * 0.04),
+            label: Text("View All",
+                style: TextStyle(fontSize: screenWidth * 0.035)),
           ),
       ],
     );
@@ -271,6 +319,8 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
     required String label,
     required VoidCallback onTap,
   }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -278,13 +328,14 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
         children: [
           CircleAvatar(
             backgroundColor: Colors.brown.shade100,
-            radius: 24,
-            child: Icon(icon, color: Colors.brown.shade800),
+            radius: screenWidth * 0.08,
+            child: Icon(icon,
+                color: Colors.brown.shade800, size: screenWidth * 0.06),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: screenWidth * 0.015),
           Text(label,
-              style:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+              style: TextStyle(
+                  fontSize: screenWidth * 0.03, fontWeight: FontWeight.w500)),
         ],
       ),
     );

@@ -29,8 +29,7 @@ class _StudentPage5State extends State<StudentPage5> {
   void initState() {
     super.initState();
     _channel = WebSocketChannel.connect(
-      //Uri.parse('ws://127.0.0.1:8000/ws/chat/${widget.senderId}'),
-      Uri.parse('ws://192.168.12.223:8000/ws/chat/${widget.senderId}'),
+      Uri.parse('wss://meetmeapp.duckdns.org/ws/chat/${widget.senderId}'),
     );
 
     _channel.stream.listen((data) {
@@ -95,7 +94,7 @@ class _StudentPage5State extends State<StudentPage5> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       appBar: AppBar(
@@ -105,7 +104,7 @@ class _StudentPage5State extends State<StudentPage5> {
         iconTheme: IconThemeData(color: Theme.of(context).shadowColor),
         titleTextStyle: TextStyle(
           color: Theme.of(context).shadowColor,
-          fontSize: 20,
+          fontSize: screenWidth * 0.05,
           fontWeight: FontWeight.w600,
           fontFamily: 'Poppins',
         ),
@@ -115,7 +114,7 @@ class _StudentPage5State extends State<StudentPage5> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(screenWidth * 0.03),
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
@@ -133,16 +132,20 @@ class _StudentPage5State extends State<StudentPage5> {
                 return Align(
                   alignment: alignment,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                    margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenWidth * 0.03),
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
                       msg['message'],
-                      style: TextStyle(fontSize: 15, color: textColor),
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        color: textColor,
+                      ),
                     ),
                   ),
                 );
@@ -151,7 +154,8 @@ class _StudentPage5State extends State<StudentPage5> {
           ),
           Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+            padding: EdgeInsets.fromLTRB(screenWidth * 0.03,
+                screenWidth * 0.015, screenWidth * 0.03, screenWidth * 0.03),
             child: Row(
               children: [
                 Expanded(
@@ -166,16 +170,19 @@ class _StudentPage5State extends State<StudentPage5> {
                         borderRadius: BorderRadius.circular(18),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 16),
+                      contentPadding: EdgeInsets.symmetric(
+                          vertical: screenWidth * 0.035,
+                          horizontal: screenWidth * 0.04),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: screenWidth * 0.02),
                 CircleAvatar(
                   backgroundColor: Theme.of(context).primaryColor,
+                  radius: screenWidth * 0.065,
                   child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
+                    icon: Icon(Icons.send,
+                        color: Colors.white, size: screenWidth * 0.055),
                     onPressed: _sendMessage,
                   ),
                 ),

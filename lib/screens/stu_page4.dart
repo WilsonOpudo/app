@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:date_picker_timeline/date_picker_timeline.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:meetme/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import 'stu_page5.dart';
 
 class StudentPage4 extends StatefulWidget {
@@ -34,12 +38,10 @@ class _StudentPage4State extends State<StudentPage4> {
             await ApiService.getProfessorEmailFromCourse(cls['course_id']);
 
         if (addedEmails.add(email)) {
-          // add() returns false if already present
           final user = await ApiService.getUserByEmail(email);
           loadedProfessors.add(user);
         }
       } catch (_) {
-        // Skip silently if email or user lookup fails
         continue;
       }
     }
@@ -51,6 +53,8 @@ class _StudentPage4State extends State<StudentPage4> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Chat with Professors"),
@@ -58,25 +62,26 @@ class _StudentPage4State extends State<StudentPage4> {
         elevation: 0,
         titleTextStyle: TextStyle(
           color: Theme.of(context).shadowColor,
-          fontSize: 20,
+          fontSize: screenWidth * 0.05,
           fontWeight: FontWeight.bold,
           fontFamily: 'Poppins',
         ),
         iconTheme: IconThemeData(color: Theme.of(context).shadowColor),
       ),
       body: professors.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "Not enrolled in any class yet.",
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w500,
-                  fontSize: 16,
+                  fontSize: screenWidth * 0.045,
                 ),
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04, vertical: screenWidth * 0.03),
               itemCount: professors.length,
               itemBuilder: (context, index) {
                 final prof = professors[index];
@@ -99,14 +104,18 @@ class _StudentPage4State extends State<StudentPage4> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenWidth * 0.03),
                       leading: CircleAvatar(
-                        radius: 25,
+                        radius: screenWidth * 0.07,
                         backgroundColor: Colors.teal.shade300,
                         child: Text(
                           prof['username'][0].toUpperCase(),
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.045,
+                          ),
                         ),
                       ),
                       title: Text(
@@ -115,17 +124,21 @@ class _StudentPage4State extends State<StudentPage4> {
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Poppins',
                           color: Theme.of(context).shadowColor,
+                          fontSize: screenWidth * 0.045,
                         ),
                       ),
                       subtitle: Text(
                         prof['email'],
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: screenWidth * 0.035,
                           color: Theme.of(context).hintColor,
                           fontFamily: 'Poppins',
                         ),
                       ),
-                      trailing: const Icon(Icons.chat_bubble_outline),
+                      trailing: Icon(
+                        Icons.chat_bubble_outline,
+                        size: screenWidth * 0.065,
+                      ),
                     ),
                   ),
                 );

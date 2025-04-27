@@ -29,50 +29,6 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
       ..sort((a, b) => a['appointment_date'].compareTo(b['appointment_date']));
   }
 
-  Widget _buildAppointmentCard(Map<String, dynamic> appt) {
-    final dateTime = DateTime.tryParse(appt['appointment_date']);
-    final formattedDate = dateTime != null
-        ? DateFormat.yMMMMd().add_jm().format(dateTime)
-        : 'Unknown Time';
-
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: const Icon(Icons.event_note, color: Colors.teal),
-        title: Text(appt['course_name']),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("With: ${appt['student_name']}"),
-            Text("At: $formattedDate"),
-          ],
-        ),
-        isThreeLine: true,
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'Cancel') {
-              _cancelAppointment(appt['id']);
-            } else if (value == 'Reschedule') {
-              _rescheduleAppointment(appt);
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(
-              value: 'Cancel',
-              child: Text("Cancel", style: TextStyle(color: Colors.red)),
-            ),
-            PopupMenuItem(
-              value: 'Reschedule',
-              child: Text("Reschedule"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   List<Map<String, dynamic>> _getUpcomingAppointments() {
     final now = DateTime.now();
     return filteredAppointments.where((a) {
@@ -303,13 +259,70 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
     );
   }
 
+  Widget _buildAppointmentCard(Map<String, dynamic> appt) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dateTime = DateTime.tryParse(appt['appointment_date']);
+    final formattedDate = dateTime != null
+        ? DateFormat.yMMMMd().add_jm().format(dateTime)
+        : 'Unknown Time';
+
+    return Card(
+      elevation: 3,
+      margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(Icons.event_note,
+            color: Colors.teal, size: screenWidth * 0.08),
+        title: Text(
+          appt['course_name'],
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: screenWidth * 0.045),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("With: ${appt['student_name']}",
+                style: TextStyle(fontSize: screenWidth * 0.035)),
+            Text("At: $formattedDate",
+                style: TextStyle(fontSize: screenWidth * 0.035)),
+          ],
+        ),
+        isThreeLine: true,
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, size: screenWidth * 0.06),
+          onSelected: (value) {
+            if (value == 'Cancel') {
+              _cancelAppointment(appt['id']);
+            } else if (value == 'Reschedule') {
+              _rescheduleAppointment(appt);
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(
+              value: 'Cancel',
+              child: Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            PopupMenuItem(
+              value: 'Reschedule',
+              child: Text("Reschedule"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("My Appointments",
-            style: TextStyle(color: Colors.black)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        title: Text(
+          "My Appointments",
+          style: TextStyle(color: Colors.black, fontSize: screenWidth * 0.05),
+        ),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: isLoading
@@ -317,13 +330,14 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   child: TextField(
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Theme.of(context).canvasColor,
-                      labelText: "Search by class name",
-                      prefixIcon: const Icon(Icons.search, color: Colors.teal),
+                      hintText: "Search by Class Name",
+                      prefixIcon: Icon(Icons.search,
+                          color: Colors.teal, size: screenWidth * 0.065),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -337,31 +351,42 @@ class _ProfessorAppointmentsPageState extends State<ProfessorAppointmentsPage> {
                 ),
                 Expanded(
                   child: filteredAppointments.isEmpty
-                      ? const Center(child: Text("No appointments found."))
+                      ? Center(
+                          child: Text(
+                            "No appointments found.",
+                            style: TextStyle(fontSize: screenWidth * 0.045),
+                          ),
+                        )
                       : ListView(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(screenWidth * 0.04),
                           children: [
                             if (_getTodayAppointments().isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 6),
-                                child: Text("Today",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.teal)),
+                              Padding(
+                                padding:
+                                    EdgeInsets.only(bottom: screenWidth * 0.02),
+                                child: Text(
+                                  "Today",
+                                  style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.teal),
+                                ),
                               ),
                               ..._getTodayAppointments()
                                   .map(_buildAppointmentCard),
-                              const SizedBox(height: 20),
+                              SizedBox(height: screenWidth * 0.04),
                             ],
                             if (_getUpcomingAppointments().isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 6),
-                                child: Text("Upcoming",
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange)),
+                              Padding(
+                                padding:
+                                    EdgeInsets.only(bottom: screenWidth * 0.02),
+                                child: Text(
+                                  "Upcoming",
+                                  style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange),
+                                ),
                               ),
                               ..._getUpcomingAppointments()
                                   .map(_buildAppointmentCard),

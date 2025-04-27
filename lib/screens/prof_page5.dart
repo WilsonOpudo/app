@@ -29,8 +29,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _channel = WebSocketChannel.connect(
-      // Uri.parse('ws://127.0.0.1:8000/ws/chat/${widget.senderId}'),
-      Uri.parse('ws://192.168.12.223:8000/ws/chat/${widget.senderId}'),
+      Uri.parse('wss://meetmeapp.duckdns.org/ws/chat/${widget.senderId}'),
     );
 
     _channel.stream.listen((data) {
@@ -64,7 +63,6 @@ class _ChatScreenState extends State<ChatScreen> {
       'message': text,
     };
 
-    // Optimistic update
     setState(() {
       messages.add(msg);
     });
@@ -93,14 +91,17 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           "Chat with ${widget.receiverName}",
-          style: const TextStyle(
-              fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            fontSize: screenWidth * 0.05,
+          ),
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
@@ -112,7 +113,9 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.035,
+                  vertical: screenWidth * 0.03),
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
@@ -128,9 +131,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 return Align(
                   alignment: align,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                    margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenWidth * 0.03),
                     decoration: BoxDecoration(
                       color: bubbleColor,
                       borderRadius: BorderRadius.circular(14),
@@ -138,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Text(
                       msg['message'],
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: screenWidth * 0.04,
                         color: textColor,
                         fontFamily: 'Poppins',
                       ),
@@ -150,7 +154,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           Divider(height: 1),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+            padding: EdgeInsets.fromLTRB(screenWidth * 0.035,
+                screenWidth * 0.02, screenWidth * 0.035, screenWidth * 0.03),
             child: Row(
               children: [
                 Expanded(
@@ -169,16 +174,19 @@ class _ChatScreenState extends State<ChatScreen> {
                         borderRadius: BorderRadius.circular(18),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenWidth * 0.035),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: screenWidth * 0.025),
                 CircleAvatar(
                   backgroundColor: theme.primaryColor,
+                  radius: screenWidth * 0.065,
                   child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
+                    icon: Icon(Icons.send,
+                        color: Colors.white, size: screenWidth * 0.055),
                     onPressed: _sendMessage,
                   ),
                 ),

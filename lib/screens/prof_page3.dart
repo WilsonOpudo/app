@@ -20,12 +20,9 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
   void initState() {
     super.initState();
     _calendarController.displayDate = _selectedDate;
-
-    // 🔥 Fix the crash on animateToDate
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _datePickerController.animateToDate(_selectedDate);
     });
-
     _fetchAppointmentsForDate(_selectedDate);
   }
 
@@ -75,19 +72,21 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Column(
           children: [
-            const SizedBox(height: 10.0),
+            SizedBox(height: screenWidth * 0.02),
             Container(
-              padding: const EdgeInsets.all(12.0),
+              padding: EdgeInsets.all(screenWidth * 0.03),
               child: DatePicker(
                 DateTime.now(),
                 controller: _datePickerController,
-                height: 120,
-                width: 60,
+                height: screenWidth * 0.25,
+                width: screenWidth * 0.13,
                 initialSelectedDate: _selectedDate,
                 selectionColor: Theme.of(context).primaryColor,
                 selectedTextColor: Theme.of(context).scaffoldBackgroundColor,
@@ -97,8 +96,7 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                   if (!isSameDay(_selectedDate, date)) {
                     setState(() => _selectedDate = date);
                     _calendarController.displayDate = date;
-                    _calendarController.selectedDate =
-                        date; // ✅ sync selected date too
+                    _calendarController.selectedDate = date;
                     _fetchAppointmentsForDate(date);
                   }
                 },
@@ -106,13 +104,13 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(screenWidth * 0.02),
                 child: SfCalendar(
                   controller: _calendarController,
                   viewHeaderStyle: ViewHeaderStyle(
                     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                     dateTextStyle: TextStyle(
-                      fontSize: 16,
+                      fontSize: screenWidth * 0.045,
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).shadowColor,
@@ -144,9 +142,10 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                       child: Center(
                         child: Text(
                           appointment.subject,
-                          style: const TextStyle(
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: screenWidth * 0.035,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w600,
                           ),
@@ -159,9 +158,9 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
                     endHour: 20,
                     timeInterval: const Duration(minutes: 30),
                     timeFormat: 'h:mm a',
-                    timeIntervalHeight: 70,
+                    timeIntervalHeight: screenWidth * 0.18,
                     timeTextStyle: TextStyle(
-                      fontSize: 12,
+                      fontSize: screenWidth * 0.03,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).shadowColor,
                     ),
@@ -176,12 +175,11 @@ class _ProfessorPage3State extends State<ProfessorPage3> {
   }
 }
 
-// 🔴 Generate unique red-tinted colors based on course name
 Color generateRedTint(String key) {
   final hash = key.hashCode;
-  final hue = (hash % 360).toDouble(); // hue between 0 and 359
-  final saturation = 0.5 + (hash % 50) / 100; // saturation 0.5–1.0
-  final brightness = 0.7 + (hash % 30) / 100; // brightness 0.7–1.0
+  final hue = (hash % 360).toDouble();
+  final saturation = 0.5 + (hash % 50) / 100;
+  final brightness = 0.7 + (hash % 30) / 100;
 
   return HSVColor.fromAHSV(1.0, hue, saturation, brightness).toColor();
 }

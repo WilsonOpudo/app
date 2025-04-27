@@ -53,6 +53,7 @@ class _ProfessorNotificationsPageState
       appBar: AppBar(
         title: const Text("Notifications"),
         centerTitle: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: RefreshIndicator(
         onRefresh: _loadNotifications,
@@ -75,26 +76,34 @@ class _ProfessorNotificationsPageState
                           ? DateFormat.yMMMd().add_jm().format(dt)
                           : '';
 
-                      return ListTile(
-                        title: Text(
-                          n['title'] ?? '',
-                          style: TextStyle(
-                            fontWeight: n['read'] == true
-                                ? FontWeight.normal
-                                : FontWeight.bold,
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            n['title'] ?? '',
+                            style: TextStyle(
+                              fontWeight: n['read'] == true
+                                  ? FontWeight.normal
+                                  : FontWeight.bold,
+                            ),
                           ),
+                          subtitle: Text(
+                            "${n['message'] ?? ''}\n$formatted",
+                            style: const TextStyle(height: 1.4),
+                          ),
+                          isThreeLine: true,
+                          trailing: n['read'] == true
+                              ? null
+                              : TextButton(
+                                  onPressed: () => _markAsRead(n['_id']),
+                                  child: const Text("Mark Read"),
+                                ),
                         ),
-                        subtitle: Text(
-                          "${n['message'] ?? ''}\n$formatted",
-                          style: const TextStyle(height: 1.4),
-                        ),
-                        isThreeLine: true,
-                        trailing: n['read'] == true
-                            ? null
-                            : TextButton(
-                                onPressed: () => _markAsRead(n['_id']),
-                                child: const Text("Mark Read"),
-                              ),
                       );
                     },
                   ),

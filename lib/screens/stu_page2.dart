@@ -81,7 +81,7 @@ class _StudentPage2State extends State<StudentPage2> {
       );
 
       if (Navigator.canPop(context)) {
-        Navigator.pop(context); // Only pop if it's not already popped
+        Navigator.pop(context);
       }
       await _loadAvailableSlots(courseId);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,10 +116,8 @@ class _StudentPage2State extends State<StudentPage2> {
         selectedDate.month == now.month &&
         selectedDate.day == now.day;
 
-// Sort all slots before grouping
     availableSlots.sort((a, b) => (a['time'] ?? '').compareTo(b['time'] ?? ''));
 
-// Group slots into AM and PM, sorted
     final amSlots = availableSlots.where((slot) {
       final hour = int.tryParse(slot['time']?.split(':').first ?? '0') ?? 0;
       return hour < 12;
@@ -161,8 +159,7 @@ class _StudentPage2State extends State<StudentPage2> {
                   onPressed: isPast
                       ? null
                       : () {
-                          Navigator.of(context)
-                              .pop(); // ❌ This prematurely closes the dialog
+                          Navigator.of(context).pop();
                           _bookSlot(courseId, courseName, professorEmail,
                               professorName, time);
                         },
@@ -180,7 +177,7 @@ class _StudentPage2State extends State<StudentPage2> {
                   child: Text(
                     time,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
                       color: isPast ? Colors.grey.shade300 : Colors.white,
                     ),
                   ),
@@ -216,11 +213,11 @@ class _StudentPage2State extends State<StudentPage2> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     "Book Your Appointment",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: MediaQuery.of(context).size.width * 0.045,
                       color: Colors.white,
                     ),
                   ),
@@ -242,63 +239,31 @@ class _StudentPage2State extends State<StudentPage2> {
     );
   }
 
-  Widget _buildSlotList(List<Map<String, dynamic>> slots, String courseId,
-      String courseName, String professorEmail, String professorName) {
-    return Column(
-      children: slots.map((slot) {
-        final time = slot['time'];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6.0),
-          child: InkWell(
-            onTap: () => _bookSlot(
-                courseId, courseName, professorEmail, professorName, time),
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.access_time, color: Colors.teal),
-                  const SizedBox(width: 12),
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Column(
         children: [
           const SizedBox(height: 12),
           DatePicker(
             DateTime.now(),
-            height: 100,
+            height: screenWidth * 0.28,
             initialSelectedDate: selectedDate,
             selectionColor: Theme.of(context).primaryColor,
             selectedTextColor: Colors.white,
             onDateChange: (date) => setState(() => selectedDate = date),
           ),
           const SizedBox(height: 8),
-          const Text('Your Enrolled Classes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+          Text(
+            'Your Enrolled Classes',
+            style: TextStyle(
+                fontSize: screenWidth * 0.045, fontWeight: FontWeight.w500),
+          ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(screenWidth * 0.03),
               itemCount: enrolledClasses.length,
               itemBuilder: (context, index) {
                 final cls = enrolledClasses[index];
@@ -307,9 +272,16 @@ class _StudentPage2State extends State<StudentPage2> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
                   child: ListTile(
-                    title: Text(cls['course_name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("Instructor: ${cls['professor_name']}"),
+                    title: Text(
+                      cls['course_name'],
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: screenWidth * 0.045),
+                    ),
+                    subtitle: Text(
+                      "Instructor: ${cls['professor_name']}",
+                      style: TextStyle(fontSize: screenWidth * 0.035),
+                    ),
                     onTap: () =>
                         _showSlotPicker(cls['course_id'], cls['course_name']),
                   ),

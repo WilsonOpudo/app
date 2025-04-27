@@ -36,14 +36,25 @@ class _CourseGroupPageState extends State<CourseGroupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.courseName} Classes"),
+        title: Text(
+          "${widget.courseName} Classes",
+          style: TextStyle(fontSize: screenWidth * 0.05),
+        ),
       ),
       body: classList.isEmpty
-          ? const Center(child: Text("No classes found in this category"))
+          ? Center(
+              child: Text(
+                "No classes found in this category",
+                style: TextStyle(fontSize: screenWidth * 0.045),
+              ),
+            )
           : ListView.builder(
               itemCount: classList.length,
+              padding: EdgeInsets.all(screenWidth * 0.04),
               itemBuilder: (context, index) {
                 final cls = classList[index];
                 final name = cls['course_name'];
@@ -52,14 +63,22 @@ class _CourseGroupPageState extends State<CourseGroupPage> {
                 final hasStudents = studentCount > 0;
 
                 return Card(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.02,
+                      vertical: screenWidth * 0.015),
                   child: ListTile(
                     leading: Icon(
                       Icons.class_,
                       color: hasStudents ? Colors.blue : Colors.grey,
+                      size: screenWidth * 0.08,
                     ),
-                    title: Text(name),
+                    title: Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.045,
+                      ),
+                    ),
                     subtitle: Text(
                       hasStudents
                           ? "Code: $code • $studentCount student${studentCount == 1 ? '' : 's'}"
@@ -68,6 +87,7 @@ class _CourseGroupPageState extends State<CourseGroupPage> {
                         color: hasStudents ? Colors.black87 : Colors.grey,
                         fontStyle:
                             hasStudents ? FontStyle.normal : FontStyle.italic,
+                        fontSize: screenWidth * 0.035,
                       ),
                     ),
                     onTap: hasStudents

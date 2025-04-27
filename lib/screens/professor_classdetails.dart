@@ -70,9 +70,17 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Class Details"),
+        title: Text(
+          "Class Details",
+          style: TextStyle(
+            fontSize: screenWidth * 0.05,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: Theme.of(context).shadowColor,
         elevation: 0,
@@ -83,28 +91,35 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.04,
+                      screenWidth * 0.04,
+                      screenWidth * 0.04,
+                      screenWidth * 0.01),
                   child: Text(
                     courseName ?? "Class Name",
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.065,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Text(
                     "Instructor: ${professorName ?? 'Unknown'}",
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: screenWidth * 0.04),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(screenWidth * 0.04),
                     decoration: BoxDecoration(
                       color: Colors.blueGrey.shade50,
                       borderRadius: BorderRadius.circular(12),
@@ -121,14 +136,16 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
                       children: [
                         Text(
                           "Description: ${description?.trim().isNotEmpty == true ? description : 'No description'}",
-                          style: const TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: screenWidth * 0.04),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: screenWidth * 0.02),
                         if (userRole == "professor")
                           Text(
                             "Class Code: $courseCode",
-                            style: const TextStyle(
-                                fontSize: 14, color: Colors.grey),
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.038,
+                              color: Colors.grey,
+                            ),
                           ),
                       ],
                     ),
@@ -136,14 +153,18 @@ class _ProfessorClassDetailsPageState extends State<ProfessorClassDetailsPage> {
                 ),
                 const Spacer(),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   child: ElevatedButton.icon(
                     onPressed: _navigateToAppointmentPage,
-                    icon: const Icon(Icons.calendar_today_rounded),
-                    label: const Text("New Appointment"),
+                    icon: Icon(Icons.calendar_today_rounded,
+                        size: screenWidth * 0.06),
+                    label: Text(
+                      "New Appointment",
+                      style: TextStyle(fontSize: screenWidth * 0.045),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      textStyle: const TextStyle(fontSize: 16),
+                      minimumSize: Size.fromHeight(screenWidth * 0.13),
+                      textStyle: TextStyle(fontSize: screenWidth * 0.045),
                     ),
                   ),
                 ),

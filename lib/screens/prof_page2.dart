@@ -42,9 +42,6 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
       date: selectedDate.toIso8601String().split('T').first,
     );
 
-    print("🟢 Raw slots received: $all");
-
-    // Filter only valid slots
     setState(() {
       availableSlots = all.where((slot) {
         return slot.containsKey('date') && slot['date'] != null;
@@ -53,6 +50,8 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
   }
 
   Future<void> _addAvailableSlot(BuildContext context) async {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     if (selectedCourseId == null || professorEmail == null) return;
 
     final now = DateTime.now();
@@ -69,7 +68,9 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text('Select Time Slot',
               style: TextStyle(
-                  fontFamily: 'Poppins', color: Theme.of(context).shadowColor)),
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  color: Theme.of(context).shadowColor)),
           content: Wrap(
             spacing: 8.0,
             runSpacing: 8.0,
@@ -126,7 +127,7 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
                 child: Text(formattedTime,
                     style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 12,
+                        fontSize: screenWidth * 0.035,
                         color: isPast ? Colors.grey : Colors.white)),
               );
             }),
@@ -142,19 +143,12 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
     final dateToUse = slot['date'];
     final timeToUse = slot['time'];
 
-    print('🗑️ Deleting slot with values:');
-    print('  professor_email: $professorEmailToUse');
-    print('  course_id: $courseIdToUse');
-    print('  date: $dateToUse');
-    print('  time: $timeToUse');
-
     if (professorEmailToUse == null ||
         courseIdToUse == null ||
         dateToUse == null ||
         timeToUse == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Slot deletion failed: Missing required values')),
+        const SnackBar(content: Text('Slot deletion failed: Missing values')),
       );
       return;
     }
@@ -168,7 +162,7 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
       );
       await _loadAvailableSlots();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Slot deleted')),
+        const SnackBar(content: Text('Slot deleted')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,6 +172,8 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
   }
 
   List<Widget> _buildGroupedSlots() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     List<Map<String, dynamic>> parseAndSort(List<Map<String, dynamic>> slots) {
       return slots
         ..sort((a, b) {
@@ -203,32 +199,34 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
     }).toList());
 
     Widget buildGroup(String label, List<Map<String, dynamic>> slots) {
-      if (slots.isEmpty) return SizedBox();
+      if (slots.isEmpty) return const SizedBox();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
-            child: Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+            padding: EdgeInsets.symmetric(
+                vertical: screenWidth * 0.01, horizontal: screenWidth * 0.04),
+            child: Text(label,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.045)),
           ),
-          ...slots.map((slot) => AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  child: ListTile(
-                    leading: Icon(Icons.access_time),
-                    title: Text(
-                      slot['time'] ?? 'Unknown',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () => _deleteSlot(slot),
-                    ),
+          ...slots.map((slot) => Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                child: ListTile(
+                  leading: const Icon(Icons.access_time),
+                  title: Text(
+                    slot['time'] ?? 'Unknown',
+                    style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        fontWeight: FontWeight.w500),
+                  ),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete,
+                        color: Colors.redAccent, size: screenWidth * 0.06),
+                    onPressed: () => _deleteSlot(slot),
                   ),
                 ),
               ))
@@ -244,6 +242,8 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -252,8 +252,8 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
             const SizedBox(height: 10),
             DatePicker(
               DateTime.now(),
-              height: 120,
-              width: 60,
+              height: 100,
+              width: screenWidth * 0.15,
               initialSelectedDate: selectedDate,
               selectionColor: Theme.of(context).primaryColor,
               selectedTextColor: Theme.of(context).scaffoldBackgroundColor,
@@ -265,11 +265,12 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
               },
             ),
             const SizedBox(height: 10),
-            const Text('Manage Available Slots',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+            Text('Manage Available Slots',
+                style: TextStyle(
+                    fontSize: screenWidth * 0.05, fontWeight: FontWeight.w500)),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(screenWidth * 0.03),
                 itemCount: professorClasses.length,
                 itemBuilder: (context, index) {
                   final cls = professorClasses[index];
@@ -278,13 +279,15 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
                       title: Text(
                         cls['course_name'],
                         style: TextStyle(
-                            fontSize: 16,
+                            fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).shadowColor),
                       ),
                       subtitle: Text(
                         'Code: ${cls['course_id']}',
-                        style: TextStyle(color: Theme.of(context).hintColor),
+                        style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Theme.of(context).hintColor),
                       ),
                       onTap: () async {
                         setState(() => selectedCourseId = cls['course_id']);
@@ -297,39 +300,44 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
             ),
             if (selectedCourseId != null) ...[
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: screenWidth * 0.02),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Selected Class:',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: screenWidth * 0.045),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       professorClasses.firstWhere((cls) =>
                           cls['course_id'] == selectedCourseId)['course_name'],
                       style: TextStyle(
-                          fontSize: 16, color: Theme.of(context).shadowColor),
+                          fontSize: screenWidth * 0.045,
+                          color: Theme.of(context).shadowColor),
                     ),
                     Text(
                       'Code: $selectedCourseId',
                       style: TextStyle(
-                          fontSize: 14, color: Theme.of(context).hintColor),
+                          fontSize: screenWidth * 0.035,
+                          color: Theme.of(context).hintColor),
                     ),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF560017),
+                          backgroundColor: const Color(0xFF560017),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04,
+                              vertical: screenWidth * 0.03),
                         ),
                         onPressed: () => _addAvailableSlot(context),
                         icon: const Icon(Icons.add),
@@ -340,19 +348,20 @@ class _ProfessorPage2State extends State<ProfessorPage2> {
                 ),
               ),
               availableSlots.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('No slots available for this day'),
+                  ? Padding(
+                      padding: EdgeInsets.all(screenWidth * 0.04),
+                      child: const Text('No slots available for this day'),
                     )
                   : Flexible(
                       child: ListView(
                         shrinkWrap: true,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.03),
                         children: _buildGroupedSlots(),
                       ),
                     ),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: screenWidth * 0.04),
           ],
         ),
       ),

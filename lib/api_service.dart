@@ -2,19 +2,22 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:meetme/analytics_service.dart'; // Adjust path as needed
 
 class ApiService {
   //static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
   //static const String baseUrl = 'http://10.0.2.2:8000'; // andriod emulator
-  static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
-  //static const String baseUrl = 'http://10.80.82.55:8000';
+  //static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
+  //static const String baseUrl = 'http://3.133.134.235:8000';
+  static const baseUrl = 'https://meetmeapp.duckdns.org';
 
   static WebSocketChannel? _channel;
 
   static WebSocketChannel connectToChat(String userId) {
     _channel = WebSocketChannel.connect(
       //Uri.parse('ws://127.0.0.1:8000/ws/chat/$userId'),
-      Uri.parse('ws://192.168.12.223:8000/ws/chat/$userId'),
+      //Uri.parse('ws://192.168.12.223:8000/ws/chat/$userId'),
+      Uri.parse('wss://meetmeapp.duckdns.org/ws/chat/$userId'),
     );
     return _channel!;
   }
@@ -27,6 +30,10 @@ class ApiService {
         'message': message,
       };
       _channel!.sink.add(jsonEncode(data));
+      AnalyticsService.logEvent("chat_sent", {
+        'sender': senderId,
+        'receiver': receiverId,
+      });
     }
   }
 
@@ -55,6 +62,7 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('email', email);
     await prefs.setString('role', role);
+    await AnalyticsService.setUserRole(role);
     if (username != null) {
       await prefs.setString('username', username);
     }
@@ -139,6 +147,13 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception('Failed to create class: ${response.body}');
     }
+    await AnalyticsService.logEvent("class_created", {
+      'course_id': courseId,
+      'course_name': courseName,
+      'professor_name': professorName,
+      'professor_email': professorEmail,
+      'description': description ?? '',
+    });
   }
 
   static Future<List<Map<String, dynamic>>> getClasses() async {
@@ -179,6 +194,11 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception('Failed to enroll in class: ${response.body}');
     }
+    await AnalyticsService.logEvent("class_joined", {
+      'student_email': studentEmail,
+      'course_id': courseId,
+      'student_username': studentUsername,
+    });
   }
 
   static Future<List<Map<String, dynamic>>> getEnrolledClasses(
@@ -214,7 +234,16 @@ class ApiService {
       }),
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode == 200) {
+      await AnalyticsService.logEvent("meeting_booked", {
+        'student_name': studentName,
+        'student_email': studentEmail,
+        'course_id': courseId,
+        'course_name': courseName,
+        'professor_name': professorName,
+        'datetime': dateTime.toIso8601String(),
+      });
+    } else {
       throw Exception('Failed to create appointment: ${response.body}');
     }
   }
@@ -519,6 +548,19 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to mark notification as read');
+    }
+  }
+
+  static Future<List<String>> getUnreadChatSenders(
+      String professorEmail) async {
+    final res =
+        await http.get(Uri.parse('$baseUrl/unread-messages/$professorEmail'));
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      return List<String>.from(data['senders']);
+    } else {
+      throw Exception("Failed to load unread messages");
     }
   }
 }

@@ -18,6 +18,44 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
   List<Map<String, dynamic>> todayAppointments = [];
   List<Map<String, dynamic>> upcomingAppointments = [];
 
+  final Map<String, String> courseImages = {
+    'Mathematics': 'assets/math.jpg',
+    'Science': 'assets/science.jpg',
+    'English': 'assets/english.jpg',
+    'History': 'assets/history.jpg',
+    'Art': 'assets/art.jpg',
+    'Other': 'assets/other.jpg',
+  };
+
+  String _matchCategory(String courseName) {
+    final name = courseName.toLowerCase();
+
+    if (name.contains('math') ||
+        name.contains('algebra') ||
+        name.contains('geometry')) {
+      return 'Mathematics';
+    } else if (name.contains('science') ||
+        name.contains('bio') ||
+        name.contains('chem') ||
+        name.contains('physics')) {
+      return 'Science';
+    } else if (name.contains('english') ||
+        name.contains('grammar') ||
+        name.contains('lit')) {
+      return 'English';
+    } else if (name.contains('history') ||
+        name.contains('civics') ||
+        name.contains('gov')) {
+      return 'History';
+    } else if (name.contains('art') ||
+        name.contains('design') ||
+        name.contains('drawing')) {
+      return 'Art';
+    } else {
+      return 'Other';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,8 +69,7 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
 
     if (email != null) {
       final classes = await ApiService.getEnrolledClasses(email);
-      final classIds =
-          classes.map((c) => c['course_id']).toSet(); // keep valid class IDs
+      final classIds = classes.map((c) => c['course_id']).toSet();
 
       final appts = await ApiService.getAppointments(email);
       final now = DateTime.now();
@@ -41,8 +78,7 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
       final upcoming = <Map<String, dynamic>>[];
 
       for (final appt in appts) {
-        if (!classIds.contains(appt['course_id']))
-          continue; // ❌ skip deleted class appointments
+        if (!classIds.contains(appt['course_id'])) continue;
 
         final apptDate = DateTime.tryParse(appt['appointment_date'] ?? '');
         if (apptDate != null) {
@@ -80,26 +116,30 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
   @override
   Widget build(BuildContext context) {
     final greeting = _getGreeting();
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("$greeting, ${username ?? 'Student'}!",
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-
-            // 🔸 Today's Appointments
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: screenWidth * 0.07,
+                    )),
+            SizedBox(height: screenWidth * 0.04),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Today's Appointments",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text("Today's Appointments",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.045)),
                 TextButton.icon(
-                  icon: const Icon(Icons.list, size: 16),
-                  label: const Text("View All"),
+                  icon: Icon(Icons.list, size: screenWidth * 0.045),
+                  label: Text("View All",
+                      style: TextStyle(fontSize: screenWidth * 0.04)),
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -108,65 +148,69 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenWidth * 0.02),
             if (todayAppointments.isEmpty)
-              const Text("No upcoming appointments.",
-                  style: TextStyle(color: Colors.grey))
+              Text("No upcoming appointments.",
+                  style: TextStyle(
+                      color: Colors.grey, fontSize: screenWidth * 0.04))
             else
               ...todayAppointments.map((appt) {
                 final time = DateFormat.jm()
                     .format(DateTime.parse(appt['appointment_date']));
                 return ListTile(
-                  leading: const Icon(Icons.calendar_today,
-                      color: Color.fromARGB(255, 201, 66, 21)),
-                  title: Text(appt['course_name']),
-                  subtitle: Text(time),
+                  leading: Icon(Icons.calendar_today,
+                      color: const Color.fromARGB(255, 201, 66, 21),
+                      size: screenWidth * 0.07),
+                  title: Text(appt['course_name'],
+                      style: TextStyle(fontSize: screenWidth * 0.045)),
+                  subtitle: Text(time,
+                      style: TextStyle(fontSize: screenWidth * 0.035)),
                 );
               }),
-
-            const SizedBox(height: 20),
-
-            // 🔸 Upcoming Appointments
-            const Text("Upcoming Appointments",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            SizedBox(height: screenWidth * 0.05),
+            Text("Upcoming Appointments",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.045)),
+            SizedBox(height: screenWidth * 0.02),
             if (upcomingAppointments.isEmpty)
-              const Text("No upcoming appointments.",
-                  style: TextStyle(color: Colors.grey))
+              Text("No upcoming appointments.",
+                  style: TextStyle(
+                      color: Colors.grey, fontSize: screenWidth * 0.04))
             else
               ...upcomingAppointments.map((appt) {
                 final dt = DateTime.parse(appt['appointment_date']);
                 final date = DateFormat.yMMMd().format(dt);
                 final time = DateFormat.jm().format(dt);
                 return ListTile(
-                  leading:
-                      const Icon(Icons.calendar_today, color: Colors.orange),
-                  title: Text(appt['course_name']),
-                  subtitle: Text("$date • $time"),
+                  leading: Icon(Icons.calendar_today,
+                      color: Colors.orange, size: screenWidth * 0.07),
+                  title: Text(appt['course_name'],
+                      style: TextStyle(fontSize: screenWidth * 0.045)),
+                  subtitle: Text("$date • $time",
+                      style: TextStyle(fontSize: screenWidth * 0.035)),
                 );
               }),
-
-            const SizedBox(height: 24),
-
-            // 🔸 Moved Quick Actions here
-            const Text("Quick Actions",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            SizedBox(height: screenWidth * 0.06),
+            Text("Quick Actions",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.045)),
+            SizedBox(height: screenWidth * 0.03),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _quickAction(Icons.add, "Book", 2),
-                _quickAction(Icons.group_add, "Join", 1),
-                _quickAction(Icons.calendar_month, "Calendar", 3),
+                _quickAction(Icons.add, "Book", 2, screenWidth),
+                _quickAction(Icons.group_add, "Join", 1, screenWidth),
+                _quickAction(Icons.calendar_month, "Calendar", 3, screenWidth),
               ],
             ),
-
-            const SizedBox(height: 24),
-
-            // 🔸 Enrolled Classes
-            const Text("Enrolled Classes",
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            SizedBox(height: screenWidth * 0.06),
+            Text("Enrolled Classes",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.045)),
+            SizedBox(height: screenWidth * 0.03),
             RepaintBoundary(
               child: ListView.builder(
                 shrinkWrap: true,
@@ -178,28 +222,28 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
 
                   return Card(
                     elevation: 1.5,
-                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
                     child: ListTile(
                       leading: ClipOval(
                         child: Image.asset(
                           imagePath,
-                          width: 40,
-                          height: 40,
+                          width: screenWidth * 0.1,
+                          height: screenWidth * 0.1,
                           fit: BoxFit.cover,
-                          cacheWidth: 80, // Reduces memory usage
+                          cacheWidth: 80,
                           cacheHeight: 80,
                         ),
                       ),
                       title: Text(
                         cls['course_name'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: screenWidth * 0.045,
                         ),
                       ),
                       subtitle: Text(
                         "Instructor: ${cls['professor_name']}",
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(fontSize: screenWidth * 0.035),
                       ),
                       onTap: () {
                         Navigator.push(
@@ -243,30 +287,20 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
   }
 
   String _getCourseImage(String courseName) {
-    final name = courseName.toLowerCase();
-    if (name.contains('math')) return 'assets/math.jpg';
-    if (name.contains('science')) return 'assets/science.jpg';
-    if (name.contains('english')) return 'assets/english.jpg';
-    if (name.contains('history')) return 'assets/history.jpg';
-    if (name.contains('art')) return 'assets/art.jpg';
-    return 'assets/other.jpg'; // fallback
+    final category = _matchCategory(courseName);
+    return courseImages[category] ?? courseImages['Other']!;
   }
 
-  Widget _quickAction(IconData icon, String label, int pageIndex) {
+  Widget _quickAction(
+      IconData icon, String label, int pageIndex, double screenWidth) {
     return InkWell(
       onTap: () async {
-        debugPrint("⏳ Attempting to navigate to page index: $pageIndex");
-
         int retries = 0;
         while (StudentNavigation.jumpToPage == null && retries < 10) {
           await Future.delayed(const Duration(milliseconds: 100));
           retries++;
         }
-
-        if (StudentNavigation.jumpToPage == null) {
-          debugPrint("❌ Still NULL after waiting, navigation failed.");
-        } else {
-          debugPrint("✅ jumpToPage is set. Navigating...");
+        if (StudentNavigation.jumpToPage != null) {
           StudentNavigation.jumpToPage!(pageIndex);
         }
       },
@@ -275,28 +309,16 @@ class _StudentWelcomePageState extends State<StudentWelcomePage> {
         children: [
           CircleAvatar(
             backgroundColor: Colors.brown.shade100,
-            radius: 24,
-            child: Icon(icon, color: Colors.brown.shade800),
+            radius: screenWidth * 0.07,
+            child: Icon(icon,
+                color: Colors.brown.shade800, size: screenWidth * 0.07),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: screenWidth * 0.015),
           Text(label,
-              style:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+              style: TextStyle(
+                  fontSize: screenWidth * 0.03, fontWeight: FontWeight.w500)),
         ],
       ),
-    );
-  }
-
-  Widget _reminderTile(String text) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey.shade50,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text),
     );
   }
 }

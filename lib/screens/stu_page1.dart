@@ -20,6 +20,44 @@ class _StudentPage1State extends State<StudentPage1> {
   String? studentEmail;
   String _searchQuery = "";
 
+  final Map<String, String> courseImages = {
+    'Mathematics': 'assets/math.jpg',
+    'Science': 'assets/science.jpg',
+    'English': 'assets/english.jpg',
+    'History': 'assets/history.jpg',
+    'Art': 'assets/art.jpg',
+    'Other': 'assets/other.jpg',
+  };
+
+  String _matchCategory(String courseName) {
+    final name = courseName.toLowerCase();
+
+    if (name.contains('math') ||
+        name.contains('algebra') ||
+        name.contains('geometry')) {
+      return 'Mathematics';
+    } else if (name.contains('sci') ||
+        name.contains('bio') ||
+        name.contains('chem') ||
+        name.contains('physics')) {
+      return 'Science';
+    } else if (name.contains('english') ||
+        name.contains('lit') ||
+        name.contains('grammar')) {
+      return 'English';
+    } else if (name.contains('history') ||
+        name.contains('civics') ||
+        name.contains('gov')) {
+      return 'History';
+    } else if (name.contains('art') ||
+        name.contains('design') ||
+        name.contains('drawing')) {
+      return 'Art';
+    } else {
+      return 'Other';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -124,17 +162,13 @@ class _StudentPage1State extends State<StudentPage1> {
   }
 
   String _getCourseIcon(String courseName) {
-    final name = courseName.toLowerCase();
-    if (name.contains('math')) return 'assets/math.jpg';
-    if (name.contains('science')) return 'assets/science.jpg';
-    if (name.contains('english')) return 'assets/english.jpg';
-    if (name.contains('history')) return 'assets/history.jpg';
-    if (name.contains('art')) return 'assets/art.jpg';
-    return 'assets/other.jpg';
+    final category = _matchCategory(courseName);
+    return courseImages[category] ?? courseImages['Other']!;
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -150,13 +184,16 @@ class _StudentPage1State extends State<StudentPage1> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.03, vertical: screenWidth * 0.02),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'My Classes',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: screenWidth * 0.06,
+                        fontWeight: FontWeight.bold),
                   ),
                   Row(
                     children: [
@@ -169,21 +206,25 @@ class _StudentPage1State extends State<StudentPage1> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.calendar_today, size: 16),
-                        label: const Text("My Appointments"),
+                        icon: Icon(Icons.calendar_today,
+                            size: screenWidth * 0.045),
+                        label: Text("My Appointments",
+                            style: TextStyle(fontSize: screenWidth * 0.035)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
+                          backgroundColor:
+                              const Color.fromARGB(255, 13, 75, 69),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04,
+                              vertical: screenWidth * 0.02),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: screenWidth * 0.02),
                       IconButton(
-                        icon: const Icon(Icons.add_rounded, size: 28),
+                        icon: Icon(Icons.add_rounded, size: screenWidth * 0.08),
                         onPressed: _showJoinClassDialog,
                       ),
                     ],
@@ -192,20 +233,21 @@ class _StudentPage1State extends State<StudentPage1> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
               child: TextField(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Search Classes',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search, size: screenWidth * 0.06),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
                 ),
                 onChanged: _filterClasses,
               ),
             ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(screenWidth * 0.03),
                 itemCount: filteredClasses.length,
                 itemBuilder: (context, index) {
                   final cls = filteredClasses[index];
@@ -215,10 +257,18 @@ class _StudentPage1State extends State<StudentPage1> {
                       leading: CircleAvatar(
                         backgroundImage: AssetImage(iconPath),
                         backgroundColor: Colors.grey.shade200,
+                        radius: screenWidth * 0.07,
                       ),
-                      title: Text(cls['course_name'],
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("Instructor: ${cls['professor_name']}"),
+                      title: Text(
+                        cls['course_name'],
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.045),
+                      ),
+                      subtitle: Text(
+                        "Instructor: ${cls['professor_name']}",
+                        style: TextStyle(fontSize: screenWidth * 0.035),
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -240,7 +290,7 @@ class _StudentPage1State extends State<StudentPage1> {
                 },
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: screenWidth * 0.05),
           ],
         ),
       ),

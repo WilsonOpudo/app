@@ -59,6 +59,8 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -73,23 +75,24 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
             return IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.notifications_none_rounded, size: 26),
+                  Icon(Icons.notifications_rounded, size: screenWidth * 0.07),
                   if (unreadCount > 0)
                     Positioned(
                       right: 0,
                       top: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: EdgeInsets.all(screenWidth * 0.01),
                         decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           unreadCount.toString(),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.025,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -114,7 +117,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
           'Meet Me',
           style: TextStyle(
             color: Theme.of(context).shadowColor,
-            fontSize: 24,
+            fontSize: screenWidth * 0.06,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w600,
           ),
@@ -122,7 +125,7 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.logout_rounded,
-                color: Theme.of(context).shadowColor),
+                size: screenWidth * 0.07, color: Theme.of(context).shadowColor),
             onPressed: () {
               Navigator.pushAndRemoveUntil(
                 context,
@@ -158,8 +161,8 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
                     controller: _controller,
                     count: 5,
                     effect: WormEffect(
-                      dotHeight: 10,
-                      dotWidth: 10,
+                      dotHeight: screenWidth * 0.025,
+                      dotWidth: screenWidth * 0.025,
                       activeDotColor: Theme.of(context).shadowColor,
                       dotColor: Theme.of(context).hintColor,
                     ),
@@ -171,21 +174,47 @@ class _ProfessorHomePageState extends State<ProfessorHomePage> {
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: GNav(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          gap: 8,
-          padding: const EdgeInsets.all(16),
+          gap: screenWidth * 0.02,
+          padding: EdgeInsets.all(screenWidth * 0.04),
           selectedIndex: _bottomNavIndex,
           onTabChange: (index) {
             AppNavigation.jumpToPage?.call(index);
           },
-          tabs: const [
-            GButton(icon: Icons.home_filled, text: 'Welcome'),
-            GButton(icon: Icons.class_, text: 'Classes'),
-            GButton(icon: Icons.dashboard_customize_rounded, text: 'Book'),
-            GButton(icon: Icons.storage_rounded, text: 'Calendar'),
-            GButton(icon: Icons.message_rounded, text: 'Chat'),
+          tabBorderRadius: screenWidth * 0.04,
+          tabs: [
+            GButton(
+              icon: Icons.home_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.amp_stories_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.dashboard_customize_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.bento_rounded,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
+            GButton(
+              icon: Icons.add_comment,
+              iconActiveColor: Theme.of(context).shadowColor,
+              iconColor: Theme.of(context).hintColor,
+              iconSize: screenWidth * 0.07,
+            ),
           ],
         ),
       ),
