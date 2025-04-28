@@ -5,18 +5,14 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:meetme/analytics_service.dart'; // Adjust path as needed
 
 class ApiService {
-  //static const String baseUrl = 'http://127.0.0.1:8000'; // Local testing
-  //static const String baseUrl = 'http://10.0.2.2:8000'; // andriod emulator
-  //static const String baseUrl = 'http://192.168.12.223:8000'; //iphone web
-  //static const String baseUrl = 'http://3.133.134.235:8000';
+
   static const baseUrl = 'https://meetmeapp.duckdns.org';
 
   static WebSocketChannel? _channel;
 
   static WebSocketChannel connectToChat(String userId) {
     _channel = WebSocketChannel.connect(
-      //Uri.parse('ws://127.0.0.1:8000/ws/chat/$userId'),
-      //Uri.parse('ws://192.168.12.223:8000/ws/chat/$userId'),
+      
       Uri.parse('wss://meetmeapp.duckdns.org/ws/chat/$userId'),
     );
     return _channel!;
