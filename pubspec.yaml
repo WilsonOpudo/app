@@ -73,12 +73,12 @@ flutter:
   assets:
     - assets/logo-png.png
     - assets/logo-transparent-png.png
-    - assets/math.jpg
-    - assets/science.jpg
-    - assets/english.jpg
-    - assets/history.jpg
-    - assets/art.jpg
-    - assets/other.jpg
+    - assets/math.png
+    - assets/science.png
+    - assets/english.png
+    - assets/history.png
+    - assets/art.png
+    - assets/other.png
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

@@ -19,12 +19,12 @@ class _ProfessorWelcomePageState extends State<ProfessorWelcomePage> {
   String? username;
 
   final Map<String, String> courseImages = {
-    'Mathematics': 'assets/math.jpg',
-    'Science': 'assets/science.jpg',
-    'English': 'assets/english.jpg',
-    'History': 'assets/history.jpg',
-    'Art': 'assets/art.jpg',
-    'Other': 'assets/other.jpg',
+    'Mathematics': 'assets/math.png',
+    'Science': 'assets/science.png',
+    'English': 'assets/english.png',
+    'History': 'assets/history.png',
+    'Art': 'assets/art.png',
+    'Other': 'assets/other.png',
   };
 
   String _matchCategory(String courseName) {
